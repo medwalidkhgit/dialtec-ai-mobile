@@ -1,5 +1,6 @@
+#Fichier des variables d'environnement
 .env
-.env.*
 
+#Dossiers pour l'IDE IntelliJ IDEA
 .idea/
 *.iml
