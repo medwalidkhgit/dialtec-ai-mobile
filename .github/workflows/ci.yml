@@ -13,7 +13,7 @@ jobs: #Each workflow could contain one or more jobs, each one is applied to its 
       fail-fast: false #This helps GitHub to not shut down the automation to continue even if a job failed. It forces to execute them in parallel independently
       matrix:
         service: #To execute two jobs in parallel using matrix.service = authentication-service and matrix.service = user-service
-          - authentification-service
+          - authentication-service
           - user-service
     defaults:
       run:
