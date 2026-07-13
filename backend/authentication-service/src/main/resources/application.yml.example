@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/authentication_db
     username: postgres
-    password: MEDWALIDKH1st.
+    password: CHANGE_ME
   jpa:
     hibernate:
       ddl-auto: update
@@ -20,8 +20,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ohjellyfishy@gmail.com
-    password: rfslrytewibgeldh
+    username: CHANGE_ME
+    password: CHANGE_ME
     properties:
       mail:
         smtp:
@@ -30,9 +30,9 @@ spring:
             enable: true
 
 jwt:
-  secret: jZmF6sPNOB3W11oug4MF7VVg38yNJbg2j1fdw/viHXXeIMN4+6GLTCfIyFp79bLNmAYESdkrEXAL9QtpkAb3Xw==
-  access-token-expiration: 1800000
-  refresh-token-expiration: 604800000
+  secret: CHANGE_ME
+  access-token-expiration: 1800000      # 30 minutes en ms
+  refresh-token-expiration: 604800000   # 7 jours en ms
 
 otp:
   expiration-minutes: 10
@@ -41,4 +41,4 @@ otp:
 
 services:
   user-service:
-    url: http://user-service:8083     # à ajuster selon le port réel de user-service
+    url: http://user-service:8083

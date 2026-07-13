@@ -4,3 +4,5 @@
 #Dossiers pour l'IDE IntelliJ IDEA
 .idea/
 *.iml
+
+application.yml

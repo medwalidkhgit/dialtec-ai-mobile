@@ -1,0 +1,33 @@
+name: CI - Build & Test (dialtec-ai-mobile) #The name of the CI pipeline that appears in the GitHub Actions section
+
+on: #This section answers the question : When to apply ?
+  push: #Apply this on push either to main or develop
+    branches: [ main, develop ]
+  pull_request: #Apply this on pull requests to main or develop before merging
+    branches: [ main, develop ]
+
+jobs: #Each workflow could contain one or more jobs, each one is applied to its proper virtual machine, the workflow is named build in this case
+  build:
+    runs-on: ubuntu-latest #Type of machines, GitHub is ready to execute these jobs
+    strategy:
+      fail-fast: false #This helps GitHub to not shut down the automation to continue even if a job failed. It forces to execute them in parallel independently
+      matrix:
+        service: #To execute two jobs in parallel using matrix.service = authentication-service and matrix.service = user-service
+          - authentification-service
+          - user-service
+    defaults:
+      run:
+        working-directory: backend/${{ matrix.service }}
+    steps: #The instructions (step by step)
+      - name: Checkout du code
+        uses: actions/checkout@v4 #The VM at the begining its empty, it clones the code to it
+
+      - name: Installation JDK 17
+        uses: actions/setup-java@v4 #Install Java 17 to the VM exactly the same configuration as Dockerfile
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven #Put in the cach /m2/repository between the runs to avoid downloading the dependencies from the beginning
+
+      - name: Build + tests (${{ matrix.service }})
+        run: sh mvnw -B clean verify #Lancer le Build
