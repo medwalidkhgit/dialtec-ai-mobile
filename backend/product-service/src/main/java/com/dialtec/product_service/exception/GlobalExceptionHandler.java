@@ -1,6 +1,6 @@
-package exception;
+package com.dialtec.product_service.exception;
 
-import com.dialtec.user_service.dto.response.ApiResponse;
+import com.dialtec.product_service.dto.response.ApiResponse;
 import io.jsonwebtoken.JwtException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,18 +19,13 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(UserAccountNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUserAccountNotFound(UserAccountNotFoundException ex) {
+    @ExceptionHandler(ProduitNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleProduitNotFound(ProduitNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
     }
 
-    @ExceptionHandler(ProfileAlreadyExistsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleProfileAlreadyExists(ProfileAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(UnauthorizedProfileAccessException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUnauthorizedProfileAccess(UnauthorizedProfileAccessException ex) {
+    @ExceptionHandler(UnauthorizedProduitAccessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnauthorizedProduitAccess(UnauthorizedProduitAccessException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
     }
 

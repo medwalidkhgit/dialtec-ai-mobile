@@ -8,6 +8,9 @@ import com.dialtec.authentication_service.dto.request.RegisterCommercantRequest;
 import com.dialtec.authentication_service.dto.request.ResendOtpRequest;
 import com.dialtec.authentication_service.dto.response.ApiResponse;
 import com.dialtec.authentication_service.dto.response.AuthResponse;
+import com.dialtec.authentication_service.enums.AccountStatus;
+
+import java.util.UUID;
 
 public interface AuthService {
 
@@ -24,4 +27,8 @@ public interface AuthService {
     AuthResponse refreshToken(RefreshTokenRequest request);
 
     ApiResponse<Void> logout(RefreshTokenRequest request);
+
+    void deleteAuthUser(UUID userId);
+
+    void syncAccountStatus(UUID userId, AccountStatus status);
 }

@@ -12,4 +12,6 @@ public interface OtpRepository extends JpaRepository<Otp, UUID> {
     Optional<Otp> findTopByAuthUserAndUsedFalseOrderByCreatedAtDesc(AuthUser authUser);
 
     Optional<Otp> findTopByAuthUserOrderByCreatedAtDesc(AuthUser authUser);
+
+    void deleteByAuthUser(AuthUser authUser);
 }

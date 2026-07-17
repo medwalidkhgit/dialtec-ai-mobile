@@ -1,4 +1,4 @@
-package exception;
+package com.dialtec.user_service.exception;
 
 public class UnauthorizedProfileAccessException extends RuntimeException {
 

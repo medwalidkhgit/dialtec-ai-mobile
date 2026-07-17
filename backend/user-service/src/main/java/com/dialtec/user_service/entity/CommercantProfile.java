@@ -17,13 +17,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Extension de UserAccount, uniquement pour les comptes ROLE_CMT.
- * Relation 1-1 à clé primaire partagée (@MapsId) : id est littéralement le
- * même UUID que UserAccount.id, pas une FK classique avec un id indépendant.
- * Aucune ligne CommercantProfile ne correspond aux comptes ROLE_CLIENT ou
- * ROLE_ADMIN.
- */
 @Entity
 @Table(name = "commercant_profiles")
 @Data

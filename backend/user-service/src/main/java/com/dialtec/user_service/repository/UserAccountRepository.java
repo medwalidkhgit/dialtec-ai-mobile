@@ -1,6 +1,7 @@
 package com.dialtec.user_service.repository;
 
 import com.dialtec.user_service.entity.UserAccount;
+import com.dialtec.user_service.enums.AccountStatus;
 import com.dialtec.user_service.enums.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -17,4 +18,6 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, UUID> 
     List<UserAccount> findByRole(Role role);
 
     long countByRole(Role role);
+
+    long countByAccountStatus(AccountStatus accountStatus);
 }

@@ -22,18 +22,25 @@ import com.dialtec.authentication_service.exception.UserAlreadyExistsException;
 import com.dialtec.authentication_service.exception.UserNotFoundException;
 import com.dialtec.authentication_service.mapper.AuthUserMapper;
 import com.dialtec.authentication_service.repository.AuthUserRepository;
+import com.dialtec.authentication_service.repository.OtpRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
+
     private final AuthUserRepository authUserRepository;
+    private final OtpRepository otpRepository;
     private final AuthUserMapper authUserMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -50,9 +57,6 @@ public class AuthServiceImpl implements AuthService {
         AuthUser authUser = authUserMapper.toEntity(request, passwordEncoder.encode(request.getPassword()));
         authUser = authUserRepository.save(authUser);
 
-        // Pas de compensation manuelle nécessaire : @Transactional annule
-        // automatiquement le save() ci-dessus si l'appel Feign échoue,
-        // puisque rien n'est encore commité en base à ce stade.
         try {
             CommercantProfileCreationRequest profileRequest = CommercantProfileCreationRequest.builder()
                     .userId(authUser.getId())
@@ -70,7 +74,12 @@ public class AuthServiceImpl implements AuthService {
             throw new ProfileCreationException("Impossible de créer le profil commerçant, veuillez réessayer.");
         }
 
-        otpService.generateAndSendOtp(authUser);
+        try {
+            otpService.generateAndSendOtp(authUser);
+        } catch (Exception e) {
+            compensateProfileCreation(authUser.getId());
+            throw new ProfileCreationException("Compte créé mais échec de l'envoi du code de vérification, veuillez réessayer.");
+        }
 
         return ApiResponse.success("Compte créé avec succès. Un code de vérification a été envoyé par email.");
     }
@@ -97,7 +106,12 @@ public class AuthServiceImpl implements AuthService {
             throw new ProfileCreationException("Impossible de créer le profil client, veuillez réessayer.");
         }
 
-        otpService.generateAndSendOtp(authUser);
+        try {
+            otpService.generateAndSendOtp(authUser);
+        } catch (Exception e) {
+            compensateProfileCreation(authUser.getId());
+            throw new ProfileCreationException("Compte créé mais échec de l'envoi du code de vérification, veuillez réessayer.");
+        }
 
         return ApiResponse.success("Compte créé avec succès. Un code de vérification a été envoyé par email.");
     }
@@ -134,10 +148,6 @@ public class AuthServiceImpl implements AuthService {
         authUser.setAccountStatus(AccountStatus.ACTIF);
         authUserRepository.save(authUser);
 
-        // Le try/catch traduit l'exception en message propre pour le client,
-        // mais @Transactional annule quand même tout (statut local + OTP
-        // marqué "used") puisque ProfileCreationException est une
-        // RuntimeException non interceptée avant la fin de la méthode.
         try {
             userServiceFeignClient.updateAccountStatus(authUser.getId(), AccountStatus.ACTIF);
         } catch (Exception e) {
@@ -194,6 +204,33 @@ public class AuthServiceImpl implements AuthService {
         authUserRepository.save(authUser);
 
         return ApiResponse.success("Déconnexion réussie.");
+    }
+
+    @Override
+    @Transactional
+    public void deleteAuthUser(UUID userId) {
+        AuthUser authUser = authUserRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Aucun compte trouvé avec cet identifiant."));
+        otpRepository.deleteByAuthUser(authUser);
+        authUserRepository.delete(authUser);
+    }
+
+    @Override
+    @Transactional
+    public void syncAccountStatus(UUID userId, AccountStatus status) {
+        AuthUser authUser = authUserRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Aucun compte trouvé avec cet identifiant."));
+        authUser.setAccountStatus(status);
+        authUserRepository.save(authUser);
+    }
+
+    private void compensateProfileCreation(UUID userId) {
+        try {
+            userServiceFeignClient.deleteProfile(userId);
+        } catch (Exception cleanupException) {
+            log.error("Échec de la compensation : profil orphelin possible dans user-service pour userId={}",
+                    userId, cleanupException);
+        }
     }
 
     private AuthResponse buildAuthResponseAndPersistSession(AuthUser authUser) {
