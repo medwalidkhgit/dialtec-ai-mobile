@@ -1,7 +1,7 @@
 name: CI - Build & Test (dialtec-ai-mobile) #The name of the CI pipeline that appears in the GitHub Actions section
 
 on: #This section answers the question : When to apply ?
-  push: #Apply this on push either to main or develop
+  push: #Apply this on push either to the main branch or the develop one
     branches: [ main, develop ]
   pull_request: #Apply this on pull requests to main or develop before merging
     branches: [ main, develop ]
@@ -15,6 +15,7 @@ jobs: #Each workflow could contain one or more jobs, each one is applied to its 
         service: #To execute two jobs in parallel using matrix.service = authentication-service and matrix.service = user-service
           - authentication-service
           - user-service
+          - product-service
     defaults:
       run:
         working-directory: backend/${{ matrix.service }}

@@ -14,20 +14,26 @@ import java.util.UUID;
 
 public interface UserAccountService {
 
+    // --- Appelées via Feign depuis authentication-service ---
     void createCommercantProfile(CommercantProfileCreationRequest request);
 
     void createClientProfile(ClientProfileCreationRequest request);
 
     void updateAccountStatus(UUID userId, AccountStatus status);
 
+    AccountStatus getAccountStatus(UUID userId);
+
+    // --- Self-service commerçant ---
     CommercantProfileResponse getOwnCommercantProfile(UUID userId);
 
     CommercantProfileResponse updateOwnCommercantProfile(UUID userId, CommercantProfileUpdateRequest request);
 
+    // --- Self-service client ---
     ClientProfileResponse getOwnClientProfile(UUID userId);
 
     ClientProfileResponse updateOwnClientProfile(UUID userId, ClientProfileUpdateRequest request);
 
+    // --- Espace admin ---
     List<CommercantProfileResponse> listCommercants();
 
     CommercantProfileResponse getCommercantDetails(UUID userId);

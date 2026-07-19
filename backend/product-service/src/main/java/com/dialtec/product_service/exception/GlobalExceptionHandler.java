@@ -29,6 +29,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(CompteNonActifException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCompteNonActif(CompteNonActifException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(ServiceIndisponibleException.class)
+    public ResponseEntity<ApiResponse<Void>> handleServiceIndisponible(ServiceIndisponibleException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(JwtException.class)
     public ResponseEntity<ApiResponse<Void>> handleJwtException(JwtException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Token invalide ou expiré."));

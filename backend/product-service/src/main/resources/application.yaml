@@ -1,3 +1,36 @@
+server:
+  port: 8084
+
 spring:
   application:
     name: product-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/product_db
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+
+  cloud:
+    openfeign:
+      okhttp:
+        enabled: true
+
+jwt:
+  secret: ${JWT_SECRET}
+
+services:
+  user-service:
+    url: http://user-service:8083

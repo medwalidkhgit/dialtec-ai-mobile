@@ -1,7 +1,6 @@
 package com.dialtec.user_service.service;
 
 import com.dialtec.user_service.client.AuthServiceFeignClient;
-import com.dialtec.user_service.exception.AuthSyncException;
 import com.dialtec.user_service.dto.request.ClientProfileCreationRequest;
 import com.dialtec.user_service.dto.request.ClientProfileUpdateRequest;
 import com.dialtec.user_service.dto.request.CommercantProfileCreationRequest;
@@ -13,6 +12,7 @@ import com.dialtec.user_service.entity.CommercantProfile;
 import com.dialtec.user_service.entity.UserAccount;
 import com.dialtec.user_service.enums.AccountStatus;
 import com.dialtec.user_service.enums.Role;
+import com.dialtec.user_service.exception.AuthSyncException;
 import com.dialtec.user_service.exception.ProfileAlreadyExistsException;
 import com.dialtec.user_service.exception.UnauthorizedProfileAccessException;
 import com.dialtec.user_service.exception.UserAccountNotFoundException;
@@ -69,6 +69,11 @@ public class UserAccountServiceImpl implements UserAccountService {
     }
 
     @Override
+    public AccountStatus getAccountStatus(UUID userId) {
+        return findAccountOrThrow(userId).getAccountStatus();
+    }
+
+    @Override
     public CommercantProfileResponse getOwnCommercantProfile(UUID userId) {
         UserAccount userAccount = findAccountOrThrow(userId);
         CommercantProfile profile = findCommercantProfileOrThrow(userId);
@@ -112,7 +117,7 @@ public class UserAccountServiceImpl implements UserAccountService {
 
     @Override
     public CommercantProfileResponse getCommercantDetails(UUID userId) {
-        return getOwnCommercantProfile(userId);
+        return getOwnCommercantProfile(userId); // même logique de lecture, réutilisée
     }
 
     @Override
