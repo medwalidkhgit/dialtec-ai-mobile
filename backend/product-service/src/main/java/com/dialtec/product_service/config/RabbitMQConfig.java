@@ -1,10 +1,15 @@
 package com.dialtec.product_service.config;
 
+import com.dialtec.product_service.messaging.ProduitGenerationResultMessage;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+
+
 
 
 @Configuration //This is a configuration class managed by Spring Boot
@@ -27,4 +32,5 @@ public class RabbitMQConfig {
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
+
 }

@@ -31,7 +31,7 @@ public class ProduitGenerationListener {
             return;
         }
 
-        Produit produit = Produit.builder()
+        Produit produit = Produit.builder() //After checking that the message is good, we start building the product entity by extracting the info from the queue
                 .commercantId(message.getCommercantId())
                 .nom(message.getNom())
                 .description(message.getDescription())
@@ -41,7 +41,7 @@ public class ProduitGenerationListener {
                 .quantite(message.getQuantite() != null ? message.getQuantite() : 0)
                 .build();
 
-        ProduitImage image = ProduitImage.builder()
+        ProduitImage image = ProduitImage.builder() //After checking that the message is good, we start building the product image entity by extracting the info from the queue
                 .produit(produit)
                 .imageUrl(message.getPhotoUrl())
                 .estPrincipale(true)
