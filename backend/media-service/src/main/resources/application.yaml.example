@@ -15,8 +15,8 @@ jwt:
 storage:
   s3:
     endpoint: http://localhost:9000
-    access-key: ${MINIO_ROOT_USER}
-    secret-key: ${MINIO_ROOT_PASSWORD}
+    access-key: CHANGE_ME
+    secret-key: CHANGE_ME
     region: us-east-1
     bucket: dialtec-media
     public-url: http://localhost:9000

@@ -16,6 +16,7 @@ jobs: #Each workflow could contain one or more jobs, each one is applied to its 
           - authentication-service
           - user-service
           - product-service
+          - - media-service
     defaults:
       run:
         working-directory: backend/${{ matrix.service }}
