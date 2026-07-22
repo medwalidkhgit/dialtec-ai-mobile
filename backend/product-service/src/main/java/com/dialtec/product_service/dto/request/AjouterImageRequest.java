@@ -14,4 +14,7 @@ public class AjouterImageRequest {
 
     @NotBlank
     private String imageUrl;
+
+    @NotBlank
+    private String imageKey;
 }

@@ -16,5 +16,11 @@ public class GenerationRequest {
     private String photoUrl;
 
     @NotBlank
+    private String photoKey;
+
+    @NotBlank
     private String audioUrl;
+
+    @NotBlank
+    private String audioKey;
 }

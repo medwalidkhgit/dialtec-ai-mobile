@@ -37,6 +37,9 @@ public class ProduitImage {
     @Column(name = "image_url", nullable = false, length = 500)
     private String imageUrl;
 
+    @Column(name = "image_key", nullable = false, length = 500)
+    private String key;
+
     @Column(nullable = false)
     @Builder.Default
     private Integer ordre = 0;

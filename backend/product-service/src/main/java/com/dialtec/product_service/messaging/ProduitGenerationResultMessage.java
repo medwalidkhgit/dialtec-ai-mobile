@@ -20,6 +20,7 @@ public class ProduitGenerationResultMessage {
     private String errorMessage;
 
     private String photoUrl;
+    private String photoKey;
     private String nom;
     private String description;
     private String categorie;

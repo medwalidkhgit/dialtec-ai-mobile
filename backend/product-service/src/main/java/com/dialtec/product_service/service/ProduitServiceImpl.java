@@ -1,5 +1,6 @@
 package com.dialtec.product_service.service;
 
+import com.dialtec.product_service.client.MediaServiceFeignClient;
 import com.dialtec.product_service.client.UserServiceFeignClient;
 import com.dialtec.product_service.dto.request.AjouterImageRequest;
 import com.dialtec.product_service.dto.request.GenerationRequest;
@@ -19,21 +20,27 @@ import com.dialtec.product_service.mapper.ProduitMapper;
 import com.dialtec.product_service.messaging.ProduitGenerationPublisher;
 import com.dialtec.product_service.repository.ProduitRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ProduitServiceImpl implements ProduitService {
 
+    private static final Logger log = LoggerFactory.getLogger(ProduitServiceImpl.class);
+
     private final ProduitRepository produitRepository;
     private final ProduitMapper produitMapper;
     private final ProduitGenerationPublisher produitGenerationPublisher;
     private final UserServiceFeignClient userServiceFeignClient;
+    private final MediaServiceFeignClient mediaServiceFeignClient;
 
     @Override
     public UUID initierGeneration(UUID commercantId, GenerationRequest request) {
@@ -49,7 +56,7 @@ public class ProduitServiceImpl implements ProduitService {
         }
 
         return produitGenerationPublisher.publishGenerationRequest(
-                commercantId, request.getPhotoUrl(), request.getAudioUrl()
+                commercantId, request.getPhotoUrl(), request.getPhotoKey(), request.getAudioUrl(), request.getAudioKey()
         );
     }
 
@@ -95,7 +102,17 @@ public class ProduitServiceImpl implements ProduitService {
     @Transactional
     public void supprimerMonProduit(UUID commercantId, UUID produitId) {
         Produit produit = findProduitOwnedByOrThrow(commercantId, produitId);
-        produitRepository.delete(produit); // cascade supprime aussi ses ProduitImage
+
+        // Récupérer les clés AVANT la suppression : la cascade va effacer
+        // les lignes ProduitImage de la base, on n'aurait plus accès à
+        // leurs clés une fois produitRepository.delete() exécuté.
+        List<String> clesImages = produit.getImages().stream()
+                .map(ProduitImage::getKey)
+                .toList();
+
+        produitRepository.delete(produit); // cascade supprime aussi ses ProduitImage en base
+
+        clesImages.forEach(this::supprimerFichierEnBestEffort);
     }
 
     @Override
@@ -106,6 +123,7 @@ public class ProduitServiceImpl implements ProduitService {
         ProduitImage image = ProduitImage.builder()
                 .produit(produit)
                 .imageUrl(request.getImageUrl())
+                .key(request.getImageKey())
                 .ordre(produit.getImages().size())
                 .estPrincipale(produit.getImages().isEmpty()) // la toute première devient principale par défaut
                 .build();
@@ -121,12 +139,16 @@ public class ProduitServiceImpl implements ProduitService {
     public ProduitResponse supprimerImage(UUID commercantId, UUID produitId, UUID imageId) {
         Produit produit = findProduitOwnedByOrThrow(commercantId, produitId);
 
-        boolean supprimee = produit.getImages().removeIf(image -> image.getId().equals(imageId));
-        if (!supprimee) {
-            throw new ProduitNotFoundException("Aucune image trouvée avec cet identifiant pour ce produit.");
-        }
+        ProduitImage imageASupprimer = produit.getImages().stream()
+                .filter(image -> image.getId().equals(imageId))
+                .findFirst()
+                .orElseThrow(() -> new ProduitNotFoundException("Aucune image trouvée avec cet identifiant pour ce produit."));
 
+        produit.getImages().remove(imageASupprimer);
         produitRepository.save(produit);
+
+        supprimerFichierEnBestEffort(imageASupprimer.getKey());
+
         return produitMapper.toProduitResponse(produit);
     }
 
@@ -162,6 +184,14 @@ public class ProduitServiceImpl implements ProduitService {
             return produitRepository.findByStatutAndCategorieIgnoreCase(StatutFiche.VALIDEE, categorie, pageable);
         }
         return produitRepository.findByStatut(StatutFiche.VALIDEE, pageable);
+    }
+
+    private void supprimerFichierEnBestEffort(String key) {
+        try {
+            mediaServiceFeignClient.deleteFile(key);
+        } catch (Exception e) {
+            log.error("Échec de suppression du fichier physique sur media-service, key={}", key, e);
+        }
     }
 
     private Produit findProduitOwnedByOrThrow(UUID commercantId, UUID produitId) {

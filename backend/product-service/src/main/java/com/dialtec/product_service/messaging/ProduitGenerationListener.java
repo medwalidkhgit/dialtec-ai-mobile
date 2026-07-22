@@ -25,13 +25,16 @@ public class ProduitGenerationListener {
     @Transactional
     public void handleGenerationResult(ProduitGenerationResultMessage message) {
         if (!message.isSuccess()) {
-
+            // Limitation actuelle connue : le commerçant n'est pas encore notifié
+            // explicitement d'un échec — juste loggé pour l'instant. Une vraie
+            // notification (ou un endpoint de suivi de statut) sera à ajouter
+            // plus tard si le temps le permet.
             log.error("Échec de génération IA pour commercantId={}, generationId={} : {}",
                     message.getCommercantId(), message.getGenerationId(), message.getErrorMessage());
             return;
         }
 
-        Produit produit = Produit.builder() //After checking that the message is good, we start building the product entity by extracting the info from the queue
+        Produit produit = Produit.builder()
                 .commercantId(message.getCommercantId())
                 .nom(message.getNom())
                 .description(message.getDescription())
@@ -41,9 +44,10 @@ public class ProduitGenerationListener {
                 .quantite(message.getQuantite() != null ? message.getQuantite() : 0)
                 .build();
 
-        ProduitImage image = ProduitImage.builder() //After checking that the message is good, we start building the product image entity by extracting the info from the queue
+        ProduitImage image = ProduitImage.builder()
                 .produit(produit)
                 .imageUrl(message.getPhotoUrl())
+                .key(message.getPhotoKey())
                 .estPrincipale(true)
                 .build();
 

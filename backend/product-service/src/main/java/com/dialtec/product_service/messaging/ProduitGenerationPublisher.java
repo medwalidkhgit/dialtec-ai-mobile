@@ -13,14 +13,16 @@ public class ProduitGenerationPublisher {
 
     private final RabbitTemplate rabbitTemplate;
 
-    public UUID publishGenerationRequest(UUID commercantId, String photoUrl, String audioUrl) {
+    public UUID publishGenerationRequest(UUID commercantId, String photoUrl, String photoKey, String audioUrl, String audioKey) {
         UUID generationId = UUID.randomUUID();
 
         ProduitGenerationRequestMessage message = ProduitGenerationRequestMessage.builder()
                 .generationId(generationId)
                 .commercantId(commercantId)
                 .photoUrl(photoUrl)
+                .photoKey(photoKey)
                 .audioUrl(audioUrl)
+                .audioKey(audioKey)
                 .build();
 
         rabbitTemplate.convertAndSend(RabbitMQConfig.GENERATION_REQUEST_QUEUE, message);

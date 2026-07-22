@@ -16,5 +16,7 @@ public class ProduitGenerationRequestMessage {
     private UUID generationId;
     private UUID commercantId;
     private String photoUrl;
+    private String photoKey;
     private String audioUrl;
+    private String audioKey;
 }
