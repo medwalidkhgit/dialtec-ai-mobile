@@ -39,6 +39,9 @@ public class Produit {
     @Column(name = "commercant_id", nullable = false)
     private UUID commercantId;
 
+    @Column(name = "generation_id")
+    private UUID generationId;
+
     @Column(nullable = false, length = 150)
     private String nom;
 

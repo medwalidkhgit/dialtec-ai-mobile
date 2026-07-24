@@ -46,7 +46,7 @@ public class ProduitServiceImpl implements ProduitService {
     public UUID initierGeneration(UUID commercantId, GenerationRequest request) {
         AccountStatus statut;
         try {
-            statut = userServiceFeignClient.getAccountStatus(commercantId);
+            statut = userServiceFeignClient.getAccountStatus(commercantId); //Verifying that the account of the commercial is validated
         } catch (Exception e) {
             throw new ServiceIndisponibleException("Impossible de vérifier votre compte pour le moment, veuillez réessayer.");
         }
@@ -58,6 +58,18 @@ public class ProduitServiceImpl implements ProduitService {
         return produitGenerationPublisher.publishGenerationRequest(
                 commercantId, request.getPhotoUrl(), request.getPhotoKey(), request.getAudioUrl(), request.getAudioKey()
         );
+    }
+
+    @Override
+    public ProduitResponse consulterParGenerationId(UUID commercantId, UUID generationId) {
+        Produit produit = produitRepository.findByGenerationId(generationId)
+                .orElseThrow(() -> new ProduitNotFoundException("Génération pas encore terminée, ou introuvable."));
+
+        if (!produit.getCommercantId().equals(commercantId)) {
+            throw new UnauthorizedProduitAccessException("Cette génération n'appartient pas à votre compte.");
+        }
+
+        return produitMapper.toProduitResponse(produit);
     }
 
     @Override
@@ -156,6 +168,15 @@ public class ProduitServiceImpl implements ProduitService {
     public Page<PublicProduitResponse> listerCataloguePublic(String nom, String categorie, Pageable pageable) {
         return rechercherCataloguePublic(nom, categorie, pageable)
                 .map(produitMapper::toPublicProduitResponse);
+    }
+
+    @Override
+    public Page<PublicProduitResponse> listerCatalogueParCommercant(UUID commercantId, String categorie, Pageable pageable) {
+        Page<Produit> page = (categorie != null && !categorie.isBlank())
+                ? produitRepository.findByStatutAndCommercantIdAndCategorieIgnoreCase(StatutFiche.VALIDEE, commercantId, categorie, pageable)
+                : produitRepository.findByStatutAndCommercantId(StatutFiche.VALIDEE, commercantId, pageable);
+
+        return page.map(produitMapper::toPublicProduitResponse);
     }
 
     @Override

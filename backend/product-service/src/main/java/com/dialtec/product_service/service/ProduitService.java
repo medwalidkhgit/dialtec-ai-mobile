@@ -16,6 +16,8 @@ public interface ProduitService {
     // --- Self-service commerçant ---
     UUID initierGeneration(UUID commercantId, GenerationRequest request);
 
+    ProduitResponse consulterParGenerationId(UUID commercantId, UUID generationId);
+
     Page<ProduitResponse> listerMesProduits(UUID commercantId, String nom, String categorie, Pageable pageable);
 
     ProduitResponse consulterMonProduit(UUID commercantId, UUID produitId);
@@ -34,6 +36,8 @@ public interface ProduitService {
 
     // --- Catalogue public (marketplace) ---
     Page<PublicProduitResponse> listerCataloguePublic(String nom, String categorie, Pageable pageable);
+
+    Page<PublicProduitResponse> listerCatalogueParCommercant(UUID commercantId, String categorie, Pageable pageable);
 
     PublicProduitResponse consulterProduitPublic(UUID produitId);
 }

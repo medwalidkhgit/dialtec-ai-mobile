@@ -6,6 +6,7 @@ import com.dialtec.user_service.dto.request.CommercantProfileCreationRequest;
 import com.dialtec.user_service.dto.request.CommercantProfileUpdateRequest;
 import com.dialtec.user_service.dto.response.ClientProfileResponse;
 import com.dialtec.user_service.dto.response.CommercantProfileResponse;
+import com.dialtec.user_service.dto.response.PublicCommercantResponse;
 import com.dialtec.user_service.entity.CommercantProfile;
 import com.dialtec.user_service.entity.UserAccount;
 import com.dialtec.user_service.enums.AccountStatus;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ProfileMapper {
+
+    // --- Création (reçue via Feign depuis authentication-service) ---
 
     public UserAccount toUserAccount(CommercantProfileCreationRequest request) {
         return UserAccount.builder()
@@ -48,6 +51,7 @@ public class ProfileMapper {
                 .build();
     }
 
+    // --- Réponses (self-service et consultation) ---
 
     public CommercantProfileResponse toCommercantProfileResponse(UserAccount userAccount, CommercantProfile profile) {
         return CommercantProfileResponse.builder()
@@ -65,6 +69,20 @@ public class ProfileMapper {
                 .build();
     }
 
+    public PublicCommercantResponse toPublicCommercantResponse(CommercantProfile profile) {
+        UserAccount userAccount = profile.getUserAccount();
+        return PublicCommercantResponse.builder()
+                .id(userAccount.getId())
+                .fullName(userAccount.getFullName())
+                .shopCategory(profile.getShopCategory())
+                .phoneNumber(userAccount.getPhoneNumber())
+                .address(profile.getAddress())
+                .city(profile.getCity())
+                .postalCode(profile.getPostalCode())
+                .description(profile.getDescription())
+                .build();
+    }
+
     public ClientProfileResponse toClientProfileResponse(UserAccount userAccount) {
         return ClientProfileResponse.builder()
                 .id(userAccount.getId())
@@ -75,6 +93,8 @@ public class ProfileMapper {
                 .createdAt(userAccount.getCreatedAt())
                 .build();
     }
+
+    // --- Mise à jour (self-service, mutation directe des entités déjà chargées) ---
 
     public void applyUpdate(UserAccount userAccount, CommercantProfile profile, CommercantProfileUpdateRequest request) {
         userAccount.setFullName(request.getFullName());

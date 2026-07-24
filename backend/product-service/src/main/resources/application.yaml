@@ -34,3 +34,5 @@ jwt:
 services:
   user-service:
     url: http://user-service:8083
+  media-service:
+    url: http://media-service:8085

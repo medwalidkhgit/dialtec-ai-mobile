@@ -24,11 +24,8 @@ public class ProduitGenerationListener {
     @RabbitListener(queues = RabbitMQConfig.GENERATION_RESULT_QUEUE)
     @Transactional
     public void handleGenerationResult(ProduitGenerationResultMessage message) {
+
         if (!message.isSuccess()) {
-            // Limitation actuelle connue : le commerçant n'est pas encore notifié
-            // explicitement d'un échec — juste loggé pour l'instant. Une vraie
-            // notification (ou un endpoint de suivi de statut) sera à ajouter
-            // plus tard si le temps le permet.
             log.error("Échec de génération IA pour commercantId={}, generationId={} : {}",
                     message.getCommercantId(), message.getGenerationId(), message.getErrorMessage());
             return;
@@ -36,6 +33,7 @@ public class ProduitGenerationListener {
 
         Produit produit = Produit.builder()
                 .commercantId(message.getCommercantId())
+                .generationId(message.getGenerationId())
                 .nom(message.getNom())
                 .description(message.getDescription())
                 .categorie(produitMapper.normalizeCategorie(message.getCategorie()))

@@ -8,10 +8,12 @@ import com.dialtec.user_service.dto.request.CommercantProfileUpdateRequest;
 import com.dialtec.user_service.dto.response.AdminStatsResponse;
 import com.dialtec.user_service.dto.response.ClientProfileResponse;
 import com.dialtec.user_service.dto.response.CommercantProfileResponse;
+import com.dialtec.user_service.dto.response.PublicCommercantResponse;
 import com.dialtec.user_service.entity.CommercantProfile;
 import com.dialtec.user_service.entity.UserAccount;
 import com.dialtec.user_service.enums.AccountStatus;
 import com.dialtec.user_service.enums.Role;
+import com.dialtec.user_service.enums.ShopCategory;
 import com.dialtec.user_service.exception.AuthSyncException;
 import com.dialtec.user_service.exception.ProfileAlreadyExistsException;
 import com.dialtec.user_service.exception.UnauthorizedProfileAccessException;
@@ -22,6 +24,8 @@ import com.dialtec.user_service.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -106,6 +110,15 @@ public class UserAccountServiceImpl implements UserAccountService {
         profileMapper.applyUpdate(userAccount, request);
         userAccountRepository.save(userAccount);
         return profileMapper.toClientProfileResponse(userAccount);
+    }
+
+    @Override
+    public Page<PublicCommercantResponse> listerCommercantsPublics(ShopCategory shopCategory, Pageable pageable) {
+        Page<CommercantProfile> page = (shopCategory != null)
+                ? commercantProfileRepository.findByShopCategoryAndUserAccount_AccountStatus(shopCategory, AccountStatus.ACTIF, pageable)
+                : commercantProfileRepository.findByUserAccount_AccountStatus(AccountStatus.ACTIF, pageable);
+
+        return page.map(profileMapper::toPublicCommercantResponse);
     }
 
     @Override

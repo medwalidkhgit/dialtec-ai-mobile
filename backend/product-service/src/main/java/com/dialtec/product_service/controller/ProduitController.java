@@ -43,6 +43,13 @@ public class ProduitController {
                 .body(ApiResponse.success("Génération en cours, la fiche apparaîtra une fois prête.", generationId));
     }
 
+    @GetMapping("/generation/{generationId}")
+    public ResponseEntity<ProduitResponse> consulterParGenerationId(
+            @AuthenticationPrincipal UUID commercantId,
+            @PathVariable UUID generationId) {
+        return ResponseEntity.ok(produitService.consulterParGenerationId(commercantId, generationId));
+    }
+
     @GetMapping
     public ResponseEntity<Page<ProduitResponse>> listerMesProduits(
             @AuthenticationPrincipal UUID commercantId,

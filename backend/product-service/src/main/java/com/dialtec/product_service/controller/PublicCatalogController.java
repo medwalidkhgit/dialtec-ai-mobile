@@ -29,6 +29,14 @@ public class PublicCatalogController {
         return ResponseEntity.ok(produitService.listerCataloguePublic(nom, categorie, pageable));
     }
 
+    @GetMapping("/commercant/{commercantId}")
+    public ResponseEntity<Page<PublicProduitResponse>> listerCatalogueParCommercant(
+            @PathVariable UUID commercantId,
+            @RequestParam(required = false) String categorie,
+            Pageable pageable) {
+        return ResponseEntity.ok(produitService.listerCatalogueParCommercant(commercantId, categorie, pageable));
+    }
+
     @GetMapping("/{produitId}")
     public ResponseEntity<PublicProduitResponse> consulterProduit(@PathVariable UUID produitId) {
         return ResponseEntity.ok(produitService.consulterProduitPublic(produitId));
