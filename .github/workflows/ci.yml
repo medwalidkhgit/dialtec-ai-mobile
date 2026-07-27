@@ -17,6 +17,8 @@ jobs: #Each workflow could contain one or more jobs, each one is applied to its 
           - user-service
           - product-service
           - media-service
+          - ai-orchestration-service
+          - api-gateway
     defaults:
       run:
         working-directory: backend/${{ matrix.service }}
