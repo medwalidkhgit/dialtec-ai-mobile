@@ -8,11 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users/client/me")
@@ -32,4 +28,11 @@ public class ClientProfileController {
             @Valid @RequestBody ClientProfileUpdateRequest request) {
         return ResponseEntity.ok(userAccountService.updateOwnClientProfile(account.getId(), request));
     }
+
+    @DeleteMapping
+    public ResponseEntity<ClientProfileResponse> deleteOwnProfile (@AuthenticationPrincipal UserAccount account) {
+        userAccountService.deleteAccount(account.getId());
+        return ResponseEntity.noContent().build();
+    }
+
 }

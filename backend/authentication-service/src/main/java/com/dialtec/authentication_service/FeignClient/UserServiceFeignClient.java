@@ -13,13 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.UUID;
 
-/**
- * Client Feign vers user-service. Pas de service discovery (Eureka) : l'URL
- * est résolue via le nom du conteneur Docker en développement, et via le DNS
- * interne de Kubernetes en cible finale (propriété services.user-service.url
- * dans application.yml). Endpoints internes uniquement, jamais routés
- * publiquement via l'API Gateway.
- */
 @FeignClient(name = "user-service", url = "${services.user-service.url}")
 public interface UserServiceFeignClient {
 
