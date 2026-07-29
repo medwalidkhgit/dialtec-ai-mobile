@@ -1,5 +1,12 @@
 package com.dialtec.ai_orchestration_service.client;
 
-public class MediaServiceFeignClient { //This java class is designed to delete the audio once the transcription process is finished
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+@FeignClient(name = "media-service", url = "${services.media-service.url}")
+public interface MediaServiceFeignClient {
+
+    @DeleteMapping("/api/media/internal")
+    void deleteFile(@RequestParam("key") String key);
 }

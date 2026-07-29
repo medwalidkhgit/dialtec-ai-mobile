@@ -162,9 +162,52 @@ services:
       STORAGE_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       STORAGE_S3_PUBLIC_URL: http://localhost:9000
       JWT_SECRET: ${JWT_SECRET}
+  postgres-ai-orchestration:
+    image: postgres:16-alpine
+    container_name: postgres-ai-orchestration
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ai_orchestration_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_ai_orchestration_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ai_orchestration_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ai-orchestration-service:
+      build:
+        context: ./backend/ai-orchestration-service
+      container_name: ai-orchestration-service
+      restart: unless-stopped
+      depends_on:
+        postgres-ai-orchestration:
+          condition: service_healthy
+        rabbitmq:
+          condition: service_healthy
+        media-service:
+          condition: service_started
+      ports:
+        - "8086:8086"
+      environment:
+        SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-ai-orchestration:5432/ai_orchestration_db
+        SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+        SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+        SPRING_RABBITMQ_HOST: rabbitmq
+        SPRING_RABBITMQ_PORT: 5672
+        SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-dialtec}
+        SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-dialtec}
+        OPENAI_API_KEY: ${OPENAI_API_KEY}
+        SERVICES_MEDIA_SERVICE_URL: http://media-service:8085
 
 volumes:
   postgres_auth_data:
   postgres_user_data:
   postgres_product_data:
   minio_data:
+  postgres_ai_orchestration_data:

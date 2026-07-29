@@ -1,3 +1,36 @@
+server:
+  port: 8086
+
 spring:
   application:
     name: ai-orchestration-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ai_orchestration_db
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+
+  cloud:
+    openfeign:
+      okhttp:
+        enabled: true
+
+openai:
+  api-key: ${OPENAI_API_KEY}
+
+services:
+  media-service:
+    url: http://media-service:8085

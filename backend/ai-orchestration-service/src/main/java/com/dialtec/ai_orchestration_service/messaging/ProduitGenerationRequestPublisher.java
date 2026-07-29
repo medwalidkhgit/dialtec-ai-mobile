@@ -1,4 +1,0 @@
-package com.dialtec.ai_orchestration_service.messaging;
-
-public class ProduitGenerationRequestPublisher {
-}
