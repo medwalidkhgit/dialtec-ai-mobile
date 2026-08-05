@@ -46,7 +46,7 @@ public class ProduitServiceImpl implements ProduitService {
     public UUID initierGeneration(UUID commercantId, GenerationRequest request) {
         AccountStatus statut;
         try {
-            statut = userServiceFeignClient.getAccountStatus(commercantId); //Verifying that the account of the commercial is validated
+            statut = userServiceFeignClient.getAccountStatus(commercantId);
         } catch (Exception e) {
             throw new ServiceIndisponibleException("Impossible de vérifier votre compte pour le moment, veuillez réessayer.");
         }
@@ -180,6 +180,18 @@ public class ProduitServiceImpl implements ProduitService {
     }
 
     @Override
+    public Page<PublicProduitResponse> listerNouveautesDeMesFournisseurs(UUID clientId, Pageable pageable) {
+        List<UUID> fournisseurIds = userServiceFeignClient.getFournisseurIds(clientId);
+
+        if (fournisseurIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        return produitRepository.findByStatutAndCommercantIdIn(StatutFiche.VALIDEE, fournisseurIds, pageable)
+                .map(produitMapper::toPublicProduitResponse);
+    }
+
+    @Override
     public PublicProduitResponse consulterProduitPublic(UUID produitId) {
         Produit produit = produitRepository.findById(produitId)
                 .filter(p -> p.getStatut() == StatutFiche.VALIDEE)
@@ -207,6 +219,16 @@ public class ProduitServiceImpl implements ProduitService {
         return produitRepository.findByStatut(StatutFiche.VALIDEE, pageable);
     }
 
+    /**
+     * Best-effort, volontairement : contrairement à la synchronisation
+     * user-service/authentication-service (où la cohérence était critique,
+     * un compte bloqué devant rester bloqué partout), un fichier orphelin
+     * sur MinIO n'est qu'un gaspillage de stockage, pas un risque de
+     * sécurité. Bloquer l'utilisateur parce que media-service est
+     * temporairement indisponible serait une mauvaise expérience pour un
+     * problème mineur — on logue pour un nettoyage manuel éventuel, sans
+     * jamais annuler la suppression déjà faite en base.
+     */
     private void supprimerFichierEnBestEffort(String key) {
         try {
             mediaServiceFeignClient.deleteFile(key);

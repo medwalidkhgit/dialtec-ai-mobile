@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -54,5 +55,10 @@ public class InternalUserController {
     @GetMapping("/{userId}/status")
     public ResponseEntity<AccountStatus> getAccountStatus(@PathVariable UUID userId) {
         return ResponseEntity.ok(userAccountService.getAccountStatus(userId));
+    }
+
+    @GetMapping("/{clientId}/fournisseurs-ids")
+    public ResponseEntity<List<UUID>> getFournisseurIds(@PathVariable UUID clientId) {
+        return ResponseEntity.ok(userAccountService.getFournisseurIds(clientId));
     }
 }

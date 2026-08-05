@@ -204,6 +204,40 @@ services:
         SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-dialtec}
         OPENAI_API_KEY: ${OPENAI_API_KEY}
         SERVICES_MEDIA_SERVICE_URL: http://media-service:8085
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+      build:
+        context: ./backend/api-gateway
+      container_name: api-gateway
+      restart: unless-stopped
+      depends_on:
+        redis:
+          condition: service_healthy
+        authentication-service:
+          condition: service_started
+        user-service:
+          condition: service_started
+        product-service:
+          condition: service_started
+        media-service:
+          condition: service_started
+      ports:
+        - "8087:8087"
+      environment:
+        SPRING_DATA_REDIS_HOST: redis
+        SPRING_DATA_REDIS_PORT: 6379
+        JWT_SECRET: ${JWT_SECRET}
 
 volumes:
   postgres_auth_data:

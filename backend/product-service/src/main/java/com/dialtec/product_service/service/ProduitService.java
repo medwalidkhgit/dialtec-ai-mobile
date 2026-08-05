@@ -39,5 +39,7 @@ public interface ProduitService {
 
     Page<PublicProduitResponse> listerCatalogueParCommercant(UUID commercantId, String categorie, Pageable pageable);
 
+    Page<PublicProduitResponse> listerNouveautesDeMesFournisseurs(UUID clientId, Pageable pageable);
+
     PublicProduitResponse consulterProduitPublic(UUID produitId);
 }

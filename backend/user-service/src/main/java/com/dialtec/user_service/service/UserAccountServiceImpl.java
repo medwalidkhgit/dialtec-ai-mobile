@@ -7,19 +7,19 @@ import com.dialtec.user_service.dto.request.CommercantProfileCreationRequest;
 import com.dialtec.user_service.dto.request.CommercantProfileUpdateRequest;
 import com.dialtec.user_service.dto.response.AdminStatsResponse;
 import com.dialtec.user_service.dto.response.ClientProfileResponse;
+import com.dialtec.user_service.dto.response.ClientResumeResponse;
 import com.dialtec.user_service.dto.response.CommercantProfileResponse;
 import com.dialtec.user_service.dto.response.PublicCommercantResponse;
 import com.dialtec.user_service.entity.CommercantProfile;
+import com.dialtec.user_service.entity.LiaisonCommercantClient;
 import com.dialtec.user_service.entity.UserAccount;
 import com.dialtec.user_service.enums.AccountStatus;
 import com.dialtec.user_service.enums.Role;
 import com.dialtec.user_service.enums.ShopCategory;
-import com.dialtec.user_service.exception.AuthSyncException;
-import com.dialtec.user_service.exception.ProfileAlreadyExistsException;
-import com.dialtec.user_service.exception.UnauthorizedProfileAccessException;
-import com.dialtec.user_service.exception.UserAccountNotFoundException;
+import com.dialtec.user_service.exception.*;
 import com.dialtec.user_service.mapper.ProfileMapper;
 import com.dialtec.user_service.repository.CommercantProfileRepository;
+import com.dialtec.user_service.repository.LiaisonCommercantClientRepository;
 import com.dialtec.user_service.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -40,6 +40,7 @@ public class UserAccountServiceImpl implements UserAccountService {
 
     private final UserAccountRepository userAccountRepository;
     private final CommercantProfileRepository commercantProfileRepository;
+    private final LiaisonCommercantClientRepository liaisonCommercantClientRepository;
     private final ProfileMapper profileMapper;
     private final AuthServiceFeignClient authServiceFeignClient;
 
@@ -119,6 +120,63 @@ public class UserAccountServiceImpl implements UserAccountService {
                 : commercantProfileRepository.findByUserAccount_AccountStatus(AccountStatus.ACTIF, pageable);
 
         return page.map(profileMapper::toPublicCommercantResponse);
+    }
+
+    @Override
+    @Transactional
+    public ClientResumeResponse ajouterClient(UUID commercantId, String email) {
+        UserAccount client = userAccountRepository.findByEmail(email)
+                .filter(account -> account.getRole() == Role.ROLE_CLIENT)
+                .orElseThrow(() -> new UserAccountNotFoundException("Aucun client trouvé avec cet email."));
+
+        if (liaisonCommercantClientRepository.existsByCommercantIdAndClientId(commercantId, client.getId())) {
+            throw new ClientDejaAjouteException("Ce client a déjà été ajouté.");
+        }
+
+        LiaisonCommercantClient liaison = LiaisonCommercantClient.builder()
+                .commercantId(commercantId)
+                .clientId(client.getId())
+                .build();
+        liaisonCommercantClientRepository.save(liaison);
+
+        return toClientResumeResponse(client);
+    }
+
+    @Override
+    @Transactional
+    public void retirerClient(UUID commercantId, UUID clientId) {
+        liaisonCommercantClientRepository.deleteByCommercantIdAndClientId(commercantId, clientId);
+    }
+
+    @Override
+    public List<ClientResumeResponse> listerMesClients(UUID commercantId) {
+        return liaisonCommercantClientRepository.findByCommercantId(commercantId).stream()
+                .map(liaison -> toClientResumeResponse(findAccountOrThrow(liaison.getClientId())))
+                .toList();
+    }
+
+    @Override
+    public List<PublicCommercantResponse> listerMesFournisseurs(UUID clientId) {
+        return liaisonCommercantClientRepository.findByClientId(clientId).stream()
+                .map(liaison -> profileMapper.toPublicCommercantResponse(
+                        findCommercantProfileOrThrow(liaison.getCommercantId())))
+                .toList();
+    }
+
+    @Override
+    public List<UUID> getFournisseurIds(UUID clientId) {
+        return liaisonCommercantClientRepository.findByClientId(clientId).stream()
+                .map(LiaisonCommercantClient::getCommercantId)
+                .toList();
+    }
+
+    private ClientResumeResponse toClientResumeResponse(UserAccount client) {
+        return ClientResumeResponse.builder()
+                .id(client.getId())
+                .email(client.getEmail())
+                .fullName(client.getFullName())
+                .phoneNumber(client.getPhoneNumber())
+                .build();
     }
 
     @Override

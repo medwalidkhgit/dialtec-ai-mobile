@@ -34,6 +34,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(ClientDejaAjouteException.class)
+    public ResponseEntity<ApiResponse<Void>> handleClientDejaAjoute(ClientDejaAjouteException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(AuthSyncException.class)
     public ResponseEntity<ApiResponse<Void>> handleAuthSyncException(AuthSyncException ex) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.error(ex.getMessage()));

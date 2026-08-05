@@ -7,6 +7,7 @@ import com.dialtec.user_service.dto.request.CommercantProfileUpdateRequest;
 import com.dialtec.user_service.dto.response.AdminStatsResponse;
 import com.dialtec.user_service.dto.response.ClientProfileResponse;
 import com.dialtec.user_service.dto.response.CommercantProfileResponse;
+import com.dialtec.user_service.dto.response.ClientResumeResponse;
 import com.dialtec.user_service.dto.response.PublicCommercantResponse;
 import com.dialtec.user_service.enums.AccountStatus;
 import com.dialtec.user_service.enums.ShopCategory;
@@ -39,6 +40,17 @@ public interface UserAccountService {
 
     // --- Navigation publique (clients) ---
     Page<PublicCommercantResponse> listerCommercantsPublics(ShopCategory shopCategory, Pageable pageable);
+
+    // --- Liaison commerçant-client ---
+    ClientResumeResponse ajouterClient(UUID commercantId, String email);
+
+    void retirerClient(UUID commercantId, UUID clientId);
+
+    List<ClientResumeResponse> listerMesClients(UUID commercantId);
+
+    List<PublicCommercantResponse> listerMesFournisseurs(UUID clientId);
+
+    List<UUID> getFournisseurIds(UUID clientId);
 
     // --- Espace admin ---
     List<CommercantProfileResponse> listCommercants();
