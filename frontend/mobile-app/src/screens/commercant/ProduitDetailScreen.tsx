@@ -2,6 +2,9 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Image, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { Button } from '../../components/Button';
 import { TextInput } from '../../components/TextInput';
 import {
@@ -10,8 +13,10 @@ import {
     validerProduit,
     mettreAJourStock,
     supprimerImage,
+    ajouterImage,
     supprimerProduit,
 } from '../../api/produitApi';
+import { uploadPhoto } from '../../api/mediaApi';
 import { ProduitResponse } from '../../types/produit';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
@@ -23,12 +28,14 @@ type RouteProps = RouteProp<CommercantStackParamList, 'ProduitDetail'>;
 export function ProduitDetailScreen() {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProps>();
+    const insets = useSafeAreaInsets();
     const { produitId } = route.params;
 
     const [produit, setProduit] = useState<ProduitResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isAddingImage, setIsAddingImage] = useState(false);
 
     const [nom, setNom] = useState('');
     const [description, setDescription] = useState('');
@@ -115,6 +122,38 @@ export function ProduitDetailScreen() {
         }
     }
 
+    async function handleAjouterImage() {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+            Alert.alert('Permission requise', "L'accès à la galerie est nécessaire.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
+        if (result.canceled) return;
+
+        setIsAddingImage(true);
+        try {
+            // Sur iOS, une photo choisie dans la galerie (contrairement à la
+            // caméra) peut avoir une adresse spéciale (ph://...), pas un vrai
+            // fichier local — cette normalisation la convertit systématiquement
+            // en fichier classique, exploitable pour l'upload.
+            const normalized = await ImageManipulator.manipulateAsync(result.assets[0].uri, [], {
+                compress: 0.8,
+                format: ImageManipulator.SaveFormat.JPEG,
+            });
+
+            const uploaded = await uploadPhoto(normalized.uri);
+            await ajouterImage(produitId, uploaded.url, uploaded.key);
+            await chargerProduit();
+        } catch (error) {
+            console.error('Erreur ajout image', error);
+            Alert.alert('Erreur', "Impossible d'ajouter cette image.");
+        } finally {
+            setIsAddingImage(false);
+        }
+    }
+
     function handleSupprimerProduit() {
         Alert.alert('Supprimer ce produit ?', 'Cette action est définitive et supprimera aussi ses images.', [
             { text: 'Annuler', style: 'cancel' },
@@ -136,19 +175,22 @@ export function ProduitDetailScreen() {
     if (isLoading || !produit) {
         return (
             <View style={styles.centered}>
-                <ActivityIndicator color={colors.primary} size="large" />
+                <ActivityIndicator color={colors.accent} size="large" />
             </View>
         );
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView
+            style={styles.wrapper}
+            contentContainerStyle={[styles.container, { paddingTop: insets.top + 20 }]}
+        >
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backLink}>
                 <Text style={styles.backText}>← Retour</Text>
             </TouchableOpacity>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesRow}>
-                {produit.images.map((image) => (
+                {(produit.images ?? []).map((image) => (
                     <View key={image.id} style={styles.imageWrapper}>
                         <Image source={{ uri: image.imageUrl }} style={styles.image} />
                         <TouchableOpacity style={styles.deleteImageButton} onPress={() => handleSupprimerImage(image.id)}>
@@ -156,6 +198,14 @@ export function ProduitDetailScreen() {
                         </TouchableOpacity>
                     </View>
                 ))}
+
+                <TouchableOpacity style={styles.addImageButton} onPress={handleAjouterImage} disabled={isAddingImage}>
+                    {isAddingImage ? (
+                        <ActivityIndicator color={colors.accent} />
+                    ) : (
+                        <Text style={styles.addImageText}>+</Text>
+                    )}
+                </TouchableOpacity>
             </ScrollView>
 
             {produit.statut === 'EN_ATTENTE_VALIDATION' && (
@@ -167,14 +217,26 @@ export function ProduitDetailScreen() {
 
             {isEditing ? (
                 <>
-                    <TextInput label="Nom" value={nom} onChangeText={setNom} />
-                    <TextInput label="Description" value={description} onChangeText={setDescription} multiline />
-                    <TextInput label="Catégorie" value={categorie} onChangeText={setCategorie} />
-                    <TextInput label="Caractéristiques" value={caracteristiques} onChangeText={setCaracteristiques} multiline />
-                    <TextInput label="Prix (MAD)" value={prix} onChangeText={setPrix} keyboardType="decimal-pad" />
+                    <TextInput label="Nom" dark value={nom} onChangeText={setNom} />
+                    <TextInput label="Description" dark value={description} onChangeText={setDescription} multiline />
+                    <TextInput label="Catégorie" dark value={categorie} onChangeText={setCategorie} />
+                    <TextInput
+                        label="Caractéristiques"
+                        dark
+                        value={caracteristiques}
+                        onChangeText={setCaracteristiques}
+                        multiline
+                    />
+                    <TextInput label="Prix (MAD)" dark value={prix} onChangeText={setPrix} keyboardType="decimal-pad" />
 
                     <Button title="Enregistrer" onPress={handleSaveEdit} loading={isSaving} />
-                    <Button title="Annuler" variant="outline" onPress={() => setIsEditing(false)} style={styles.spacedButton} />
+                    <Button
+                        title="Annuler"
+                        variant="outline"
+                        dark
+                        onPress={() => setIsEditing(false)}
+                        style={styles.spacedButton}
+                    />
                 </>
             ) : (
                 <>
@@ -184,15 +246,27 @@ export function ProduitDetailScreen() {
                     <Text style={styles.description}>{produit.description}</Text>
                     {produit.caracteristiques ? <Text style={styles.description}>{produit.caracteristiques}</Text> : null}
 
-                    <Button title="Modifier" variant="outline" onPress={() => setIsEditing(true)} style={styles.spacedButton} />
+                    <Button
+                        title="Modifier"
+                        variant="outline"
+                        dark
+                        onPress={() => setIsEditing(true)}
+                        style={styles.spacedButton}
+                    />
                 </>
             )}
 
             <View style={styles.stockSection}>
                 <Text style={styles.sectionTitle}>Stock</Text>
-                <TextInput label="Quantité" value={quantite} onChangeText={setQuantite} keyboardType="number-pad" />
-                <TextInput label="Seuil d'alerte" value={seuilAlerte} onChangeText={setSeuilAlerte} keyboardType="number-pad" />
-                <Button title="Mettre à jour le stock" variant="outline" onPress={handleSaveStock} loading={isSaving} />
+                <TextInput label="Quantité" dark value={quantite} onChangeText={setQuantite} keyboardType="number-pad" />
+                <TextInput
+                    label="Seuil d'alerte"
+                    dark
+                    value={seuilAlerte}
+                    onChangeText={setSeuilAlerte}
+                    keyboardType="number-pad"
+                />
+                <Button title="Mettre à jour le stock" variant="outline" dark onPress={handleSaveStock} loading={isSaving} />
             </View>
 
             <TouchableOpacity onPress={handleSupprimerProduit} style={styles.deleteProductButton}>
@@ -203,10 +277,11 @@ export function ProduitDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.darkBackground },
+    wrapper: { flex: 1, backgroundColor: colors.darkBackground },
     container: { padding: 20, paddingBottom: 60 },
     backLink: { marginBottom: 16 },
-    backText: { fontFamily: fonts.regular, fontSize: 16, color: colors.primary },
+    backText: { fontFamily: fonts.regular, fontSize: 16, color: colors.accent },
     imagesRow: { marginBottom: 16 },
     imageWrapper: { marginRight: 10, position: 'relative' },
     image: { width: 140, height: 140, borderRadius: 12 },
@@ -214,7 +289,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 6,
         right: 6,
-        backgroundColor: colors.black + 'AA',
+        backgroundColor: colors.black + 'CC',
         borderRadius: 12,
         width: 24,
         height: 24,
@@ -222,24 +297,49 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     deleteImageText: { color: colors.white, fontSize: 13, fontFamily: fonts.bold },
+    addImageButton: {
+        width: 140,
+        height: 140,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: colors.darkBorder,
+        borderStyle: 'dashed',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    addImageText: { fontFamily: fonts.bold, fontSize: 32, color: colors.accent },
     pendingBanner: {
-        backgroundColor: colors.accent + '20',
+        backgroundColor: colors.darkSurface,
         borderRadius: 12,
         padding: 16,
         marginBottom: 20,
+        borderWidth: 1,
+        borderColor: colors.accent + '40',
     },
     pendingText: {
         fontFamily: fonts.semiBold,
         fontSize: 14,
-        color: colors.textPrimary,
+        color: colors.darkTextPrimary,
         marginBottom: 12,
     },
-    nom: { fontFamily: fonts.bold, fontSize: 22, color: colors.textPrimary, marginBottom: 6 },
-    prix: { fontFamily: fonts.semiBold, fontSize: 18, color: colors.primary, marginBottom: 4 },
-    categorie: { fontFamily: fonts.regular, fontSize: 14, color: colors.marine, marginBottom: 12 },
-    description: { fontFamily: fonts.regular, fontSize: 15, color: colors.textPrimary, marginBottom: 8, lineHeight: 22 },
+    nom: { fontFamily: fonts.bold, fontSize: 22, color: colors.darkTextPrimary, marginBottom: 6 },
+    prix: { fontFamily: fonts.semiBold, fontSize: 18, color: colors.accent, marginBottom: 4 },
+    categorie: { fontFamily: fonts.regular, fontSize: 14, color: colors.darkTextSecondary, marginBottom: 12 },
+    description: {
+        fontFamily: fonts.regular,
+        fontSize: 15,
+        color: colors.darkTextPrimary,
+        marginBottom: 8,
+        lineHeight: 22,
+    },
     spacedButton: { marginTop: 12 },
-    sectionTitle: { fontFamily: fonts.bold, fontSize: 17, color: colors.textPrimary, marginTop: 28, marginBottom: 12 },
+    sectionTitle: {
+        fontFamily: fonts.bold,
+        fontSize: 17,
+        color: colors.darkTextPrimary,
+        marginTop: 28,
+        marginBottom: 12,
+    },
     stockSection: { marginTop: 8 },
     deleteProductButton: { marginTop: 32, alignItems: 'center' },
     deleteProductText: { fontFamily: fonts.semiBold, fontSize: 15, color: '#D32F2F' },

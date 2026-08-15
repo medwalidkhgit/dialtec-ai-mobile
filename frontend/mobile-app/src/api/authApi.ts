@@ -31,7 +31,10 @@ export interface AuthTokens {
 
 export async function login(payload: LoginPayload): Promise<AuthTokens> {
     const response = await apiClient.post('/api/auth/login', payload);
-    return response.data.data;
+    // Contrairement aux autres endpoints, /api/auth/login renvoie directement
+    // { id, email, role, accessToken, refreshToken, expiresIn } — pas
+    // enveloppé dans { success, message, data }.
+    return response.data;
 }
 
 export async function registerCommercant(payload: RegisterCommercantPayload): Promise<void> {
@@ -52,4 +55,26 @@ export async function resendOtp(email: string): Promise<void> {
 
 export async function logout(): Promise<void> {
     await apiClient.post('/api/auth/logout');
+}
+
+export interface ChangeEmailPayload {
+    currentEmail: string;
+    password: string;
+    newEmail: string;
+}
+
+export interface ChangePasswordPayload {
+    email: string;
+    oldPassword: string;
+    newPassword: string;
+}
+
+export async function changeEmail(payload: ChangeEmailPayload): Promise<string> {
+    const response = await apiClient.patch('/api/auth/change-email', payload);
+    return response.data.message;
+}
+
+export async function changePassword(payload: ChangePasswordPayload): Promise<string> {
+    const response = await apiClient.patch('/api/auth/change-password', payload);
+    return response.data.message;
 }

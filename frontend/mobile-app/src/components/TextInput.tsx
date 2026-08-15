@@ -7,18 +7,19 @@ interface TextInputProps extends RNTextInputProps {
     label: string;
     required?: boolean;
     error?: string;
+    dark?: boolean;
 }
 
-export function TextInput({ label, required, error, style, ...rest }: TextInputProps) {
+export function TextInput({ label, required, error, dark, style, ...rest }: TextInputProps) {
     return (
         <View style={styles.container}>
-            <Text style={styles.label}>
+            <Text style={[styles.label, dark && styles.labelDark]}>
                 {label}
                 {required ? <Text style={styles.required}> *</Text> : null}
             </Text>
             <RNTextInput
-                style={[styles.input, error ? styles.inputError : null, style as any]}
-                placeholderTextColor={colors.marine + '80'}
+                style={[styles.input, dark && styles.inputDark, error ? styles.inputError : null, style as any]}
+                placeholderTextColor={dark ? colors.darkTextSecondary : colors.marine + '80'}
                 {...rest}
             />
             {error && <Text style={styles.errorText}>{error}</Text>}
@@ -36,6 +37,9 @@ const styles = StyleSheet.create({
         color: colors.textPrimary,
         marginBottom: 6,
     },
+    labelDark: {
+        color: colors.darkTextPrimary,
+    },
     required: {
         color: '#D32F2F',
     },
@@ -49,6 +53,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: colors.textPrimary,
         backgroundColor: colors.white,
+    },
+    inputDark: {
+        borderColor: colors.darkBorder,
+        backgroundColor: colors.darkSurface,
+        color: colors.darkTextPrimary,
     },
     // Rouge d'erreur : seule exception volontaire à la palette de marque —
     // convention universelle attendue par les utilisateurs pour un état

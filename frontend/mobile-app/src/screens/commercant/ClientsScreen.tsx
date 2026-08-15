@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert } from 'reac
 import { useFocusEffect } from '@react-navigation/native';
 import { Button } from '../../components/Button';
 import { TextInput } from '../../components/TextInput';
+import { Header } from '../../components/Header';
 import { listerMesClients, ajouterClient, retirerClient } from '../../api/userApi';
 import { ClientResumeResponse } from '../../types/user';
 import { colors } from '../../theme/colors';
@@ -68,12 +69,13 @@ export function ClientsScreen() {
     }
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Mes clients</Text>
+        <View style={styles.wrapper}>
+            <Header role="commercant" />
 
             <View style={styles.addSection}>
                 <TextInput
                     label="Ajouter un client par email"
+                    dark
                     value={emailRecherche}
                     onChangeText={setEmailRecherche}
                     placeholder="client@email.com"
@@ -81,19 +83,17 @@ export function ClientsScreen() {
                     keyboardType="email-address"
                 />
                 {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-                <Button title="Ajouter" variant="outline" onPress={handleAjouter} loading={isAdding} />
+                <Button title="Ajouter" variant="outline" dark onPress={handleAjouter} loading={isAdding} />
             </View>
 
             {isLoading ? (
-                <ActivityIndicator color={colors.primary} size="large" style={styles.loader} />
+                <ActivityIndicator color={colors.accent} size="large" style={styles.loader} />
             ) : (
                 <FlatList
                     data={clients}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={styles.list}
-                    ListEmptyComponent={
-                        <Text style={styles.emptyText}>Aucun client ajouté pour l'instant.</Text>
-                    }
+                    ListEmptyComponent={<Text style={styles.emptyText}>Aucun client ajouté pour l'instant.</Text>}
                     renderItem={({ item }) => (
                         <View style={styles.clientCard}>
                             <View style={styles.clientInfo}>
@@ -113,9 +113,8 @@ export function ClientsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.white, padding: 20 },
-    title: { fontFamily: fonts.bold, fontSize: 22, color: colors.textPrimary, marginBottom: 20 },
-    addSection: { marginBottom: 20 },
+    wrapper: { flex: 1, backgroundColor: colors.darkBackground },
+    addSection: { paddingHorizontal: 20, marginBottom: 12 },
     error: {
         fontFamily: fonts.regular,
         fontSize: 13,
@@ -123,11 +122,11 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     loader: { marginTop: 40 },
-    list: { paddingBottom: 40 },
+    list: { paddingHorizontal: 20, paddingBottom: 40 },
     emptyText: {
         fontFamily: fonts.regular,
         fontSize: 15,
-        color: colors.marine,
+        color: colors.darkTextSecondary,
         textAlign: 'center',
         marginTop: 40,
     },
@@ -137,11 +136,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: colors.marine + '15',
+        borderBottomColor: colors.darkBorder,
     },
     clientInfo: { flex: 1 },
-    clientName: { fontFamily: fonts.semiBold, fontSize: 15, color: colors.textPrimary, marginBottom: 2 },
-    clientDetail: { fontFamily: fonts.regular, fontSize: 13, color: colors.marine },
+    clientName: { fontFamily: fonts.semiBold, fontSize: 15, color: colors.darkTextPrimary, marginBottom: 2 },
+    clientDetail: { fontFamily: fonts.regular, fontSize: 13, color: colors.darkTextSecondary },
     removeLink: {
         fontFamily: fonts.semiBold,
         fontSize: 13,

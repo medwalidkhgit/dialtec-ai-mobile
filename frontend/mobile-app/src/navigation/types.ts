@@ -21,10 +21,12 @@ export type ClientCatalogueStackParamList = {
     ProduitDetailPublic: { produitId: string };
 };
 
+import { PublicCommercantResponse } from '../types/user';
+
 export type FournisseursStackParamList = {
     FournisseursList: undefined;
     DecouvrirCommercants: undefined;
-    CommercantCatalogue: { commercantId: string; commercantName: string };
+    CommercantCatalogue: { commercant: PublicCommercantResponse };
     ProduitDetailPublic: { produitId: string };
 };
 

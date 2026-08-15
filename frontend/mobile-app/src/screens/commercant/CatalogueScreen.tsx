@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Header } from '../../components/Header';
 import { listerMonCatalogue } from '../../api/produitApi';
 import { ProduitResponse } from '../../types/produit';
 import { colors } from '../../theme/colors';
@@ -28,8 +29,6 @@ export function CatalogueScreen() {
         }
     }, []);
 
-    // Recharge à chaque fois que l'onglet redevient actif (ex: retour après
-    // avoir validé un produit) — pas seulement au tout premier montage.
     useFocusEffect(
         useCallback(() => {
             chargerCatalogue();
@@ -41,82 +40,85 @@ export function CatalogueScreen() {
         chargerCatalogue();
     }
 
-    if (isLoading) {
-        return (
-            <View style={styles.centered}>
-                <ActivityIndicator color={colors.primary} size="large" />
-            </View>
-        );
-    }
-
     return (
-        <FlatList
-            data={produits}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.list}
-            refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
-            ListEmptyComponent={
-                <View style={styles.centered}>
-                    <Text style={styles.emptyText}>Aucun produit pour l'instant.</Text>
-                </View>
-            }
-            renderItem={({ item }) => {
-                const imagePrincipale = item.images.find((img) => img.estPrincipale) ?? item.images[0];
-                const stockFaible = item.quantite <= item.seuilAlerte;
+        <View style={styles.wrapper}>
+            <Header role="commercant" />
 
-                return (
-                    <TouchableOpacity
-                        style={styles.card}
-                        onPress={() => navigation.navigate('ProduitDetail', { produitId: item.id })}
-                    >
-                        {imagePrincipale ? (
-                            <Image source={{ uri: imagePrincipale.imageUrl }} style={styles.image} />
-                        ) : (
-                            <View style={[styles.image, styles.imagePlaceholder]} />
-                        )}
-
-                        <View style={styles.cardContent}>
-                            <Text style={styles.nom} numberOfLines={1}>{item.nom}</Text>
-                            <Text style={styles.prix}>{item.prix ? `${item.prix} MAD` : 'Prix non défini'}</Text>
-
-                            <View style={styles.badgesRow}>
-                                {item.statut === 'EN_ATTENTE_VALIDATION' && (
-                                    <View style={[styles.badge, styles.badgeWarning]}>
-                                        {/* Fond orange -> texte NOIR, jamais orange ni blanc — règle fixée avec la palette */}
-                                        <Text style={styles.badgeTextOnAccent}>À valider</Text>
-                                    </View>
-                                )}
-                                {stockFaible && (
-                                    <View style={[styles.badge, styles.badgeDanger]}>
-                                        <Text style={styles.badgeTextOnDanger}>Stock faible</Text>
-                                    </View>
-                                )}
-                            </View>
+            {isLoading ? (
+                <ActivityIndicator color={colors.accent} size="large" style={styles.loader} />
+            ) : (
+                <FlatList
+                    data={produits}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.list}
+                    refreshControl={
+                        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={colors.accent} />
+                    }
+                    ListEmptyComponent={
+                        <View style={styles.centered}>
+                            <Text style={styles.emptyText}>Aucun produit pour l'instant.</Text>
                         </View>
-                    </TouchableOpacity>
-                );
-            }}
-        />
+                    }
+                    renderItem={({ item }) => {
+                        const imagePrincipale = (item.images ?? []).find((img) => img.estPrincipale) ?? item.images?.[0];
+                        const stockFaible = item.quantite <= item.seuilAlerte;
+
+                        return (
+                            <TouchableOpacity
+                                style={styles.card}
+                                onPress={() => navigation.navigate('ProduitDetail', { produitId: item.id })}
+                            >
+                                {imagePrincipale ? (
+                                    <Image source={{ uri: imagePrincipale.imageUrl }} style={styles.image} />
+                                ) : (
+                                    <View style={[styles.image, styles.imagePlaceholder]} />
+                                )}
+
+                                <View style={styles.cardContent}>
+                                    <Text style={styles.nom} numberOfLines={1}>{item.nom}</Text>
+                                    <Text style={styles.prix}>{item.prix ? `${item.prix} MAD` : 'Prix non défini'}</Text>
+
+                                    <View style={styles.badgesRow}>
+                                        {item.statut === 'EN_ATTENTE_VALIDATION' && (
+                                            <View style={[styles.badge, styles.badgeWarning]}>
+                                                <Text style={styles.badgeTextOnAccent}>À valider</Text>
+                                            </View>
+                                        )}
+                                        {stockFaible && (
+                                            <View style={[styles.badge, styles.badgeDanger]}>
+                                                <Text style={styles.badgeTextOnDanger}>Stock faible</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    }}
+                />
+            )}
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
+    wrapper: { flex: 1, backgroundColor: colors.darkBackground },
+    centered: { alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
     emptyText: {
         fontFamily: fonts.regular,
         fontSize: 15,
-        color: colors.marine,
+        color: colors.darkTextSecondary,
     },
+    loader: { marginTop: 60 },
     list: {
         padding: 16,
     },
     card: {
         flexDirection: 'row',
-        backgroundColor: colors.white,
+        backgroundColor: colors.darkSurface,
         borderRadius: 12,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: colors.marine + '20',
+        borderColor: colors.darkBorder,
         overflow: 'hidden',
     },
     image: {
@@ -124,7 +126,7 @@ const styles = StyleSheet.create({
         height: 88,
     },
     imagePlaceholder: {
-        backgroundColor: colors.marine + '15',
+        backgroundColor: colors.darkBorder,
     },
     cardContent: {
         flex: 1,
@@ -134,13 +136,13 @@ const styles = StyleSheet.create({
     nom: {
         fontFamily: fonts.semiBold,
         fontSize: 15,
-        color: colors.textPrimary,
+        color: colors.darkTextPrimary,
         marginBottom: 4,
     },
     prix: {
         fontFamily: fonts.regular,
         fontSize: 14,
-        color: colors.marine,
+        color: colors.accent,
         marginBottom: 6,
     },
     badgesRow: {

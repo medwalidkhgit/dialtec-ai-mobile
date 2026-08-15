@@ -1,6 +1,8 @@
 package com.dialtec.authentication_service.service;
 
 import com.dialtec.authentication_service.FeignClient.UserServiceFeignClient;
+import com.dialtec.authentication_service.dto.request.ChangeEmailRequest;
+import com.dialtec.authentication_service.dto.request.ChangePasswordRequest;
 import com.dialtec.authentication_service.dto.request.LoginRequest;
 import com.dialtec.authentication_service.dto.request.OtpVerificationRequest;
 import com.dialtec.authentication_service.dto.request.RefreshTokenRequest;
@@ -74,6 +76,11 @@ public class AuthServiceImpl implements AuthService {
             throw new ProfileCreationException("Impossible de créer le profil commerçant, veuillez réessayer.");
         }
 
+        // Le profil user-service existe déjà et est déjà commité à ce stade
+        // (transaction indépendante, terminée). Si l'envoi d'OTP échoue ici,
+        // @Transactional annule bien la partie locale (AuthUser), mais ne
+        // peut rien faire côté user-service — d'où la compensation manuelle
+        // explicite ci-dessous.
         try {
             otpService.generateAndSendOtp(authUser);
         } catch (Exception e) {
@@ -208,9 +215,64 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    public ApiResponse<Void> changeEmail(ChangeEmailRequest request) {
+        AuthUser authUser = authUserRepository.findByEmail(request.getCurrentEmail())
+                .orElseThrow(() -> new UserNotFoundException("Aucun compte trouvé avec cet email."));
+
+        if (!passwordEncoder.matches(request.getPassword(), authUser.getPassword())) {
+            throw new InvalidCredentialsException("Mot de passe incorrect.");
+        }
+
+        if (authUserRepository.existsByEmail(request.getNewEmail())) {
+            throw new UserAlreadyExistsException("Cet email est déjà utilisé par un autre compte.");
+        }
+
+        authUser.setEmail(request.getNewEmail());
+        // Un changement d'email remet le compte en attente de vérification —
+        // preuve que le titulaire possède réellement cette nouvelle adresse,
+        // même principe de sécurité qu'à l'inscription initiale.
+        authUser.setAccountStatus(AccountStatus.EN_ATTENTE_VERIFICATION);
+        authUserRepository.save(authUser);
+
+        try {
+            userServiceFeignClient.updateEmail(authUser.getId(), request.getNewEmail());
+        } catch (Exception e) {
+            throw new ProfileCreationException("Impossible de synchroniser le nouvel email, veuillez réessayer.");
+        }
+
+        try {
+            otpService.generateAndSendOtp(authUser);
+        } catch (Exception e) {
+            throw new ProfileCreationException("Email modifié mais échec de l'envoi du code de vérification.");
+        }
+
+        return ApiResponse.success("Email modifié. Un code de vérification a été envoyé à la nouvelle adresse.");
+    }
+
+    @Override
+    @Transactional
+    public ApiResponse<Void> changePassword(ChangePasswordRequest request) {
+        AuthUser authUser = authUserRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("Aucun compte trouvé avec cet email."));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), authUser.getPassword())) {
+            throw new InvalidCredentialsException("Ancien mot de passe incorrect.");
+        }
+
+        authUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        authUserRepository.save(authUser);
+
+        return ApiResponse.success("Mot de passe modifié avec succès.");
+    }
+
+    @Override
+    @Transactional
     public void deleteAuthUser(UUID userId) {
         AuthUser authUser = authUserRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("Aucun compte trouvé avec cet identifiant."));
+        // Nécessaire avant de supprimer AuthUser : la contrainte de clé
+        // étrangère otps.auth_user_id -> auth_users.id empêche sinon la
+        // suppression tant que des OTP existent encore pour ce compte.
         otpRepository.deleteByAuthUser(authUser);
         authUserRepository.delete(authUser);
     }
@@ -224,6 +286,12 @@ public class AuthServiceImpl implements AuthService {
         authUserRepository.save(authUser);
     }
 
+    /**
+     * Compensation manuelle : supprime le profil déjà commité côté
+     * user-service, quand une étape après l'appel Feign échoue localement.
+     * Best-effort — si cet appel échoue aussi, on logue clairement plutôt
+     * que de masquer un profil orphelin restant en base.
+     */
     private void compensateProfileCreation(UUID userId) {
         try {
             userServiceFeignClient.deleteProfile(userId);

@@ -1,5 +1,7 @@
 package com.dialtec.authentication_service.controller;
 
+import com.dialtec.authentication_service.dto.request.ChangeEmailRequest;
+import com.dialtec.authentication_service.dto.request.ChangePasswordRequest;
 import com.dialtec.authentication_service.dto.request.LoginRequest;
 import com.dialtec.authentication_service.dto.request.OtpVerificationRequest;
 import com.dialtec.authentication_service.dto.request.RefreshTokenRequest;
@@ -11,9 +13,9 @@ import com.dialtec.authentication_service.dto.response.AuthResponse;
 import com.dialtec.authentication_service.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    
+
     private final AuthService authService;
 
     @PostMapping("/register/commercant")
@@ -59,5 +61,15 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody RefreshTokenRequest request) {
         return ResponseEntity.ok(authService.logout(request));
+    }
+
+    @PatchMapping("/change-email")
+    public ResponseEntity<ApiResponse<Void>> changeEmail(@Valid @RequestBody ChangeEmailRequest request) {
+        return ResponseEntity.ok(authService.changeEmail(request));
+    }
+
+    @PatchMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        return ResponseEntity.ok(authService.changePassword(request));
     }
 }

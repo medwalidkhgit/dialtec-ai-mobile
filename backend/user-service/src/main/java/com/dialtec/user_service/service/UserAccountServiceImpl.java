@@ -16,7 +16,11 @@ import com.dialtec.user_service.entity.UserAccount;
 import com.dialtec.user_service.enums.AccountStatus;
 import com.dialtec.user_service.enums.Role;
 import com.dialtec.user_service.enums.ShopCategory;
-import com.dialtec.user_service.exception.*;
+import com.dialtec.user_service.exception.AuthSyncException;
+import com.dialtec.user_service.exception.ClientDejaAjouteException;
+import com.dialtec.user_service.exception.ProfileAlreadyExistsException;
+import com.dialtec.user_service.exception.UnauthorizedProfileAccessException;
+import com.dialtec.user_service.exception.UserAccountNotFoundException;
 import com.dialtec.user_service.mapper.ProfileMapper;
 import com.dialtec.user_service.repository.CommercantProfileRepository;
 import com.dialtec.user_service.repository.LiaisonCommercantClientRepository;
@@ -70,6 +74,14 @@ public class UserAccountServiceImpl implements UserAccountService {
     public void updateAccountStatus(UUID userId, AccountStatus status) {
         UserAccount userAccount = findAccountOrThrow(userId);
         userAccount.setAccountStatus(status);
+        userAccountRepository.save(userAccount);
+    }
+
+    @Override
+    @Transactional
+    public void updateEmail(UUID userId, String email) {
+        UserAccount userAccount = findAccountOrThrow(userId);
+        userAccount.setEmail(email);
         userAccountRepository.save(userAccount);
     }
 

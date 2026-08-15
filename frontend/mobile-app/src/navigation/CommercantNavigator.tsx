@@ -37,9 +37,13 @@ export function CommercantNavigator() {
         <Tab.Navigator
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.marine,
-                tabBarStyle: { backgroundColor: colors.white },
+                tabBarActiveTintColor: colors.accent,
+                tabBarInactiveTintColor: colors.darkTextSecondary,
+                tabBarStyle: {
+                    backgroundColor: colors.darkSurface,
+                    borderTopColor: colors.darkBorder,
+                    borderTopWidth: 1,
+                },
             }}
         >
             <Tab.Screen

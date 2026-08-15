@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
-import { AudioModule, RecordingPresets, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
+import {
+    AudioModule,
+    RecordingPresets,
+    setAudioModeAsync,
+    useAudioRecorder,
+    useAudioRecorderState,
+} from 'expo-audio';
 import { Button } from '../../components/Button';
+import { Header } from '../../components/Header';
 import { uploadPhoto, uploadAudio } from '../../api/mediaApi';
 import { declencherGeneration, consulterGeneration } from '../../api/produitApi';
 import { colors } from '../../theme/colors';
@@ -14,7 +21,7 @@ import { GenerationStackParamList } from '../../navigation/types';
 type NavigationProp = NativeStackNavigationProp<GenerationStackParamList, 'GenerationCapture'>;
 
 const POLL_INTERVAL_MS = 3000;
-const POLL_MAX_ATTEMPTS = 20; // ~1 minute maximum d'attente
+const POLL_MAX_ATTEMPTS = 20;
 
 export function GenerationScreen() {
     const navigation = useNavigation<NavigationProp>();
@@ -26,6 +33,16 @@ export function GenerationScreen() {
 
     const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
     const recorderState = useAudioRecorderState(audioRecorder);
+
+    // Sans cette configuration explicite, l'enregistrement peut échouer
+    // silencieusement, notamment sur iOS — trouvé dans la documentation
+    // officielle expo-audio, absent de notre première version.
+    useEffect(() => {
+        setAudioModeAsync({
+            playsInSilentMode: true,
+            allowsRecording: true,
+        });
+    }, []);
 
     async function handleTakePhoto() {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -101,63 +118,86 @@ export function GenerationScreen() {
             setAudioUri(null);
             navigation.navigate('ProduitDetail', { produitId: produit.id });
         } catch {
-            // 404 attendu tant que ce n'est pas prêt — on retente après un délai,
-            // exactement le principe du generationId côté backend.
             setTimeout(() => pollGeneration(generationId, attempt + 1), POLL_INTERVAL_MS);
         }
     }
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Nouvelle fiche produit</Text>
+        <View style={styles.wrapper}>
+            <Header role="commercant" />
 
-            <View style={styles.captureRow}>
-                {photoUri ? (
-                    <Image source={{ uri: photoUri }} style={styles.photoPreview} />
-                ) : (
-                    <View style={[styles.photoPreview, styles.photoPlaceholder]}>
-                        <Text style={styles.placeholderText}>Aucune photo</Text>
-                    </View>
-                )}
-                <Button
-                    title={photoUri ? 'Reprendre la photo' : 'Prendre une photo'}
-                    variant="outline"
-                    onPress={handleTakePhoto}
-                />
-            </View>
+            <ScrollView contentContainerStyle={styles.container}>
+                <Text style={styles.title}>Nouvelle fiche produit</Text>
 
-            <View style={styles.captureRow}>
-                <Text style={styles.audioStatus}>
-                    {audioUri ? 'Audio enregistré ✓' : recorderState.isRecording ? 'Enregistrement en cours...' : 'Aucun audio'}
-                </Text>
-                <Button
-                    title={recorderState.isRecording ? "Arrêter l'enregistrement" : audioUri ? 'Réenregistrer' : 'Enregistrer'}
-                    variant="outline"
-                    onPress={recorderState.isRecording ? handleStopRecording : handleStartRecording}
-                />
-            </View>
-
-            {isSubmitting ? (
-                <View style={styles.submittingContainer}>
-                    <ActivityIndicator color={colors.primary} size="large" />
-                    <Text style={styles.statusText}>{statusMessage}</Text>
+                <View style={styles.captureRow}>
+                    {photoUri ? (
+                        <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+                    ) : (
+                        <View style={[styles.photoPreview, styles.photoPlaceholder]}>
+                            <Text style={styles.placeholderText}>Aucune photo</Text>
+                        </View>
+                    )}
+                    <Button
+                        title={photoUri ? 'Reprendre la photo' : 'Prendre une photo'}
+                        variant="outline"
+                        dark
+                        onPress={handleTakePhoto}
+                    />
                 </View>
-            ) : (
-                <Button title="Générer la fiche" onPress={handleSubmit} style={styles.submitButton} />
-            )}
+
+                <View style={styles.captureRow}>
+                    <Text style={styles.audioStatus}>
+                        {audioUri ? 'Audio enregistré ✓' : recorderState.isRecording ? 'Enregistrement en cours...' : 'Aucun audio'}
+                    </Text>
+                    <Button
+                        title={recorderState.isRecording ? "Arrêter l'enregistrement" : audioUri ? 'Réenregistrer' : 'Enregistrer'}
+                        variant="outline"
+                        dark
+                        onPress={recorderState.isRecording ? handleStopRecording : handleStartRecording}
+                    />
+                </View>
+
+                {isSubmitting ? (
+                    <View style={styles.submittingContainer}>
+                        <ActivityIndicator color={colors.accent} size="large" />
+                        <Text style={styles.statusText}>{statusMessage}</Text>
+                    </View>
+                ) : (
+                    <Button title="Générer la fiche" onPress={handleSubmit} style={styles.submitButton} />
+                )}
+            </ScrollView>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.white, padding: 20 },
-    title: { fontFamily: fonts.bold, fontSize: 22, color: colors.textPrimary, marginBottom: 24, textAlign: 'center' },
+    wrapper: { flex: 1, backgroundColor: colors.darkBackground },
+    container: { padding: 20 },
+    title: {
+        fontFamily: fonts.bold,
+        fontSize: 22,
+        color: colors.darkTextPrimary,
+        marginBottom: 24,
+        textAlign: 'center',
+    },
     captureRow: { marginBottom: 24, alignItems: 'center' },
     photoPreview: { width: '100%', height: 200, borderRadius: 12, marginBottom: 12 },
-    photoPlaceholder: { backgroundColor: colors.marine + '15', alignItems: 'center', justifyContent: 'center' },
-    placeholderText: { fontFamily: fonts.regular, color: colors.marine },
-    audioStatus: { fontFamily: fonts.regular, fontSize: 14, color: colors.textPrimary, marginBottom: 12 },
+    photoPlaceholder: {
+        backgroundColor: colors.darkSurface,
+        borderWidth: 1,
+        borderColor: colors.darkBorder,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    placeholderText: { fontFamily: fonts.regular, color: colors.darkTextSecondary },
+    audioStatus: { fontFamily: fonts.regular, fontSize: 14, color: colors.darkTextPrimary, marginBottom: 12 },
     submittingContainer: { alignItems: 'center', marginTop: 20 },
-    statusText: { fontFamily: fonts.regular, fontSize: 14, color: colors.marine, marginTop: 12, textAlign: 'center' },
+    statusText: {
+        fontFamily: fonts.regular,
+        fontSize: 14,
+        color: colors.darkTextSecondary,
+        marginTop: 12,
+        textAlign: 'center',
+    },
     submitButton: { marginTop: 12 },
 });

@@ -46,6 +46,6 @@ export interface PublicCommercantResponse {
 export interface AdminStatsResponse {
     totalCommercants: number;
     totalClients: number;
-    totalProduits: number;
-    totalFichesGenerees: number;
+    totalComptesBloques: number;
+    totalComptesEnAttenteVerification: number;
 }

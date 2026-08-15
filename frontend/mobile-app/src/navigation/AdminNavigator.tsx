@@ -7,6 +7,7 @@ import { DashboardScreen } from '../screens/admin/DashboardScreen';
 import { CommercantsListScreen } from '../screens/admin/CommercantsListScreen';
 import { CommercantDetailScreen } from '../screens/admin/CommercantDetailScreen';
 import { CatalogueConsultationScreen } from '../screens/admin/CatalogueConsultationScreen';
+import { ProfilScreen } from '../screens/admin/ProfilScreen';
 import { ProduitDetailScreen } from '../screens/client/ProduitDetailScreen';
 import { CommercantsStackParamList, AdminCatalogueStackParamList } from './types';
 
@@ -37,9 +38,13 @@ export function AdminNavigator() {
         <Tab.Navigator
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.marine,
-                tabBarStyle: { backgroundColor: colors.white },
+                tabBarActiveTintColor: colors.accent,
+                tabBarInactiveTintColor: colors.darkTextSecondary,
+                tabBarStyle: {
+                    backgroundColor: colors.darkSurface,
+                    borderTopColor: colors.darkBorder,
+                    borderTopWidth: 1,
+                },
             }}
         >
             <Tab.Screen
@@ -62,6 +67,11 @@ export function AdminNavigator() {
                 name="Catalogue"
                 component={CatalogueStackNavigator}
                 options={{ tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} /> }}
+            />
+            <Tab.Screen
+                name="Profil"
+                component={ProfilScreen}
+                options={{ tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} /> }}
             />
         </Tab.Navigator>
     );

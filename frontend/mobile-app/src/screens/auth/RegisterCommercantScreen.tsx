@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import {
+    View,
+    Text,
+    Image,
+    ImageBackground,
+    ScrollView,
+    StyleSheet,
+    Pressable,
+    TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button } from '../../components/Button';
@@ -65,60 +76,128 @@ export function RegisterCommercantScreen() {
     }
 
     return (
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-                <Text style={styles.title}>Inscription commerçant</Text>
-
-                <TextInput label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-                <TextInput label="Mot de passe" value={password} onChangeText={setPassword} secureTextEntry />
-                <TextInput
-                    label="Confirmer le mot de passe"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry
+        <ImageBackground source={require('../../../assets/background.png')} style={styles.background} resizeMode="cover">
+            <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                <Image
+                    source={require('../../../assets/OpenShelf_Black_Variant.png')}
+                    style={styles.logo}
+                    resizeMode="contain"
                 />
-                <TextInput label="Nom complet" value={fullName} onChangeText={setFullName} />
 
-                <Text style={styles.label}>Catégorie de boutique</Text>
-                <View style={styles.chipsContainer}>
-                    {SHOP_CATEGORIES.map((category) => {
-                        const isSelected = category === shopCategory;
-                        return (
-                            <Pressable
-                                key={category}
-                                onPress={() => setShopCategory(category)}
-                                style={[styles.chip, isSelected && styles.chipSelected]}
-                            >
-                                <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                                    {SHOP_CATEGORY_LABELS[category]}
-                                </Text>
-                            </Pressable>
-                        );
-                    })}
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Text style={styles.backButtonText}>← Retour</Text>
+                </TouchableOpacity>
+
+                <View style={styles.cardWrapper}>
+                    <ScrollView
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <Text style={styles.title}>Inscription commerçant</Text>
+
+                        <TextInput label="Email" required value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+                        <TextInput label="Mot de passe" required value={password} onChangeText={setPassword} secureTextEntry />
+                        <TextInput
+                            label="Confirmer le mot de passe"
+                            required
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry
+                        />
+                        <TextInput label="Nom complet" required value={fullName} onChangeText={setFullName} />
+
+                        <Text style={styles.label}>
+                            Catégorie de boutique <Text style={styles.required}>*</Text>
+                        </Text>
+                        <View style={styles.chipsContainer}>
+                            {SHOP_CATEGORIES.map((category) => {
+                                const isSelected = category === shopCategory;
+                                return (
+                                    <Pressable
+                                        key={category}
+                                        onPress={() => setShopCategory(category)}
+                                        style={[styles.chip, isSelected && styles.chipSelected]}
+                                    >
+                                        <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                                            {SHOP_CATEGORY_LABELS[category]}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+
+                        <TextInput label="Téléphone" required value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
+                        <TextInput label="Adresse" required value={address} onChangeText={setAddress} />
+                        <TextInput label="Ville" required value={city} onChangeText={setCity} />
+                        <TextInput label="Code postal" required value={postalCode} onChangeText={setPostalCode} keyboardType="number-pad" />
+                        <TextInput
+                            label="Description (optionnel)"
+                            value={description}
+                            onChangeText={setDescription}
+                            multiline
+                        />
+
+                        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+
+                        <Button title="S'inscrire" onPress={handleRegister} loading={isLoading} />
+                    </ScrollView>
                 </View>
-
-                <TextInput label="Téléphone" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
-                <TextInput label="Adresse" value={address} onChangeText={setAddress} />
-                <TextInput label="Ville" value={city} onChangeText={setCity} />
-                <TextInput label="Code postal" value={postalCode} onChangeText={setPostalCode} keyboardType="number-pad" />
-                <TextInput label="Description (optionnel)" value={description} onChangeText={setDescription} multiline />
-
-                {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-
-                <Button title="S'inscrire" onPress={handleRegister} loading={isLoading} />
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    flex: { flex: 1, backgroundColor: colors.white },
-    container: { paddingHorizontal: 24, paddingVertical: 40 },
+    background: { flex: 1 },
+    flex: { flex: 1, paddingTop: 60, paddingHorizontal: 24 },
+    logo: {
+        width: 170,
+        height: 46,
+        alignSelf: 'center',
+        marginBottom: 12,
+    },
+    backButton: {
+        alignSelf: 'center',
+        backgroundColor: colors.black,
+        borderRadius: 24,
+        paddingHorizontal: 18,
+        paddingVertical: 8,
+        marginBottom: 16,
+    },
+    backButtonText: {
+        fontFamily: fonts.semiBold,
+        fontSize: 14,
+        color: colors.white,
+    },
+    // La carte remplit l'espace restant (flex: 1) au lieu de grandir avec le
+    // contenu — c'est ce qui rend le défilement INTERNE nécessaire, et fait
+    // apparaître la barre de scroll sur le bord droit de la carte elle-même,
+    // pas de tout l'écran.
+    cardWrapper: {
+        flex: 1,
+        backgroundColor: colors.white,
+        borderRadius: 20,
+        marginBottom: 30,
+        overflow: 'hidden',
+        shadowColor: colors.black,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        padding: 24,
+    },
     title: {
         fontFamily: fonts.bold,
-        fontSize: 24,
+        fontSize: 22,
         color: colors.textPrimary,
-        marginBottom: 24,
+        marginBottom: 20,
         textAlign: 'center',
     },
     label: {
@@ -126,6 +205,9 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: colors.textPrimary,
         marginBottom: 8,
+    },
+    required: {
+        color: '#D32F2F',
     },
     chipsContainer: {
         flexDirection: 'row',

@@ -3,6 +3,8 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator
 import { useFocusEffect } from '@react-navigation/native';
 import { Button } from '../../components/Button';
 import { TextInput } from '../../components/TextInput';
+import { Header } from '../../components/Header';
+import { SecuritySection } from '../../components/SecuritySection';
 import { getMonProfilCommercant, modifierMonProfilCommercant, supprimerMonCompteCommercant } from '../../api/userApi';
 import { useAuth } from '../../context/AuthContext';
 import { CommercantProfileResponse } from '../../types/user';
@@ -73,17 +75,10 @@ export function ProfilScreen() {
         }
     }
 
-    function handleLogout() {
-        Alert.alert('Se déconnecter ?', '', [
-            { text: 'Annuler', style: 'cancel' },
-            { text: 'Se déconnecter', style: 'destructive', onPress: logout },
-        ]);
-    }
-
     function handleDeleteAccount() {
         Alert.alert(
             'Supprimer ton compte ?',
-            'Cette action est définitive. Ton profil et tes informations seront supprimés.',
+            'Cette action est définitive. Ton profil, ton catalogue et tes informations seront supprimés.',
             [
                 { text: 'Annuler', style: 'cancel' },
                 {
@@ -92,9 +87,6 @@ export function ProfilScreen() {
                     onPress: async () => {
                         try {
                             await supprimerMonCompteCommercant();
-                            // Même principe que logout() : la session locale est nettoyée
-                            // quoi qu'il arrive, même si l'appel serveur qui suit échoue
-                            // (le compte n'existe déjà plus).
                             await logout();
                         } catch {
                             Alert.alert('Erreur', 'Impossible de supprimer le compte.');
@@ -108,65 +100,92 @@ export function ProfilScreen() {
     if (isLoading || !profil) {
         return (
             <View style={styles.centered}>
-                <ActivityIndicator color={colors.primary} size="large" />
+                <ActivityIndicator color={colors.accent} size="large" />
             </View>
         );
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Mon profil</Text>
-            <Text style={styles.email}>{profil.email}</Text>
+        <View style={styles.wrapper}>
+            <Header role="commercant" />
 
-            {isEditing ? (
-                <>
-                    <TextInput label="Nom complet" value={fullName} onChangeText={setFullName} />
+            <ScrollView contentContainerStyle={styles.container}>
+                <Text style={styles.email}>{profil.email}</Text>
 
-                    <Text style={styles.label}>Catégorie de boutique</Text>
-                    <View style={styles.chipsContainer}>
-                        {SHOP_CATEGORIES.map((category) => {
-                            const isSelected = category === shopCategory;
-                            return (
-                                <Pressable
-                                    key={category}
-                                    onPress={() => setShopCategory(category)}
-                                    style={[styles.chip, isSelected && styles.chipSelected]}
-                                >
-                                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                                        {SHOP_CATEGORY_LABELS[category]}
-                                    </Text>
-                                </Pressable>
-                            );
-                        })}
-                    </View>
+                {isEditing ? (
+                    <>
+                        <TextInput label="Nom complet" dark value={fullName} onChangeText={setFullName} />
 
-                    <TextInput label="Téléphone" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
-                    <TextInput label="Adresse" value={address} onChangeText={setAddress} />
-                    <TextInput label="Ville" value={city} onChangeText={setCity} />
-                    <TextInput label="Code postal" value={postalCode} onChangeText={setPostalCode} keyboardType="number-pad" />
-                    <TextInput label="Description" value={description} onChangeText={setDescription} multiline />
+                        <Text style={styles.label}>Catégorie de boutique</Text>
+                        <View style={styles.chipsContainer}>
+                            {SHOP_CATEGORIES.map((category) => {
+                                const isSelected = category === shopCategory;
+                                return (
+                                    <Pressable
+                                        key={category}
+                                        onPress={() => setShopCategory(category)}
+                                        style={[styles.chip, isSelected && styles.chipSelected]}
+                                    >
+                                        <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                                            {SHOP_CATEGORY_LABELS[category]}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
 
-                    <Button title="Enregistrer" onPress={handleSave} loading={isSaving} />
-                    <Button title="Annuler" variant="outline" onPress={() => setIsEditing(false)} style={styles.spacedButton} />
-                </>
-            ) : (
-                <>
-                    <ProfilRow label="Nom" value={profil.fullName} />
-                    <ProfilRow label="Catégorie" value={SHOP_CATEGORY_LABELS[profil.shopCategory]} />
-                    <ProfilRow label="Téléphone" value={profil.phoneNumber} />
-                    <ProfilRow label="Adresse" value={`${profil.address}, ${profil.city} ${profil.postalCode}`} />
-                    {profil.description ? <ProfilRow label="Description" value={profil.description} /> : null}
+                        <TextInput
+                            label="Téléphone"
+                            dark
+                            value={phoneNumber}
+                            onChangeText={setPhoneNumber}
+                            keyboardType="phone-pad"
+                        />
+                        <TextInput label="Adresse" dark value={address} onChangeText={setAddress} />
+                        <TextInput label="Ville" dark value={city} onChangeText={setCity} />
+                        <TextInput
+                            label="Code postal"
+                            dark
+                            value={postalCode}
+                            onChangeText={setPostalCode}
+                            keyboardType="number-pad"
+                        />
+                        <TextInput label="Description" dark value={description} onChangeText={setDescription} multiline />
 
-                    <Button title="Modifier" variant="outline" onPress={() => setIsEditing(true)} style={styles.spacedButton} />
-                </>
-            )}
+                        <Button title="Enregistrer" onPress={handleSave} loading={isSaving} />
+                        <Button
+                            title="Annuler"
+                            variant="outline"
+                            dark
+                            onPress={() => setIsEditing(false)}
+                            style={styles.spacedButton}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <ProfilRow label="Nom" value={profil.fullName} />
+                        <ProfilRow label="Catégorie" value={SHOP_CATEGORY_LABELS[profil.shopCategory]} />
+                        <ProfilRow label="Téléphone" value={profil.phoneNumber} />
+                        <ProfilRow label="Adresse" value={`${profil.address}, ${profil.city} ${profil.postalCode}`} />
+                        {profil.description ? <ProfilRow label="Description" value={profil.description} /> : null}
 
-            <Button title="Se déconnecter" variant="primary" onPress={handleLogout} style={styles.logoutButton} />
+                        <Button
+                            title="Modifier"
+                            variant="outline"
+                            dark
+                            onPress={() => setIsEditing(true)}
+                            style={styles.spacedButton}
+                        />
+                    </>
+                )}
 
-            <TouchableOpacity onPress={handleDeleteAccount} style={styles.deleteAccountButton}>
-                <Text style={styles.deleteAccountText}>Supprimer mon compte</Text>
-            </TouchableOpacity>
-        </ScrollView>
+                <SecuritySection currentEmail={profil.email} dark />
+
+                <TouchableOpacity onPress={handleDeleteAccount} style={styles.deleteAccountButton}>
+                    <Text style={styles.deleteAccountText}>Supprimer mon compte</Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </View>
     );
 }
 
@@ -180,27 +199,26 @@ function ProfilRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.darkBackground },
+    wrapper: { flex: 1, backgroundColor: colors.darkBackground },
     container: { padding: 20, paddingBottom: 60 },
-    title: { fontFamily: fonts.bold, fontSize: 24, color: colors.textPrimary, marginBottom: 4 },
-    email: { fontFamily: fonts.regular, fontSize: 14, color: colors.marine, marginBottom: 24 },
-    label: { fontFamily: fonts.semiBold, fontSize: 14, color: colors.textPrimary, marginBottom: 8 },
+    email: { fontFamily: fonts.regular, fontSize: 14, color: colors.darkTextSecondary, marginBottom: 24 },
+    label: { fontFamily: fonts.semiBold, fontSize: 14, color: colors.darkTextPrimary, marginBottom: 8 },
     chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
     chip: {
         paddingVertical: 8,
         paddingHorizontal: 14,
         borderRadius: 20,
         borderWidth: 1.5,
-        borderColor: colors.marine + '40',
+        borderColor: colors.darkBorder,
     },
-    chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-    chipText: { fontFamily: fonts.regular, fontSize: 13, color: colors.textPrimary },
-    chipTextSelected: { color: colors.white },
+    chipSelected: { backgroundColor: colors.accent, borderColor: colors.accent },
+    chipText: { fontFamily: fonts.regular, fontSize: 13, color: colors.darkTextSecondary },
+    chipTextSelected: { color: colors.accentText, fontFamily: fonts.semiBold },
     spacedButton: { marginTop: 12 },
     row: { marginBottom: 16 },
-    rowLabel: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.marine, marginBottom: 2 },
-    rowValue: { fontFamily: fonts.regular, fontSize: 16, color: colors.textPrimary },
-    logoutButton: { marginTop: 32 },
+    rowLabel: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.darkTextSecondary, marginBottom: 2 },
+    rowValue: { fontFamily: fonts.regular, fontSize: 16, color: colors.darkTextPrimary },
     deleteAccountButton: { marginTop: 20, alignItems: 'center' },
     deleteAccountText: { fontFamily: fonts.semiBold, fontSize: 14, color: '#D32F2F' },
 });

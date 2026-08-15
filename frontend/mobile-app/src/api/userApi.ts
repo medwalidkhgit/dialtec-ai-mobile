@@ -13,14 +13,14 @@ import { PagedResponse } from '../types/produit';
 
 export async function getMonProfilCommercant(): Promise<CommercantProfileResponse> {
     const response = await apiClient.get('/api/users/commercant/me');
-    return response.data.data;
+    return response.data;
 }
 
 export async function modifierMonProfilCommercant(
     payload: Omit<CommercantProfileResponse, 'id' | 'email' | 'accountStatus'>
 ): Promise<CommercantProfileResponse> {
     const response = await apiClient.put('/api/users/commercant/me', payload);
-    return response.data.data;
+    return response.data;
 }
 
 export async function supprimerMonCompteCommercant(): Promise<void> {
@@ -29,7 +29,7 @@ export async function supprimerMonCompteCommercant(): Promise<void> {
 
 export async function ajouterClient(email: string): Promise<ClientResumeResponse> {
     const response = await apiClient.post('/api/users/commercant/me/clients', null, { params: { email } });
-    return response.data.data;
+    return response.data;
 }
 
 export async function retirerClient(clientId: string): Promise<void> {
@@ -38,21 +38,21 @@ export async function retirerClient(clientId: string): Promise<void> {
 
 export async function listerMesClients(): Promise<ClientResumeResponse[]> {
     const response = await apiClient.get('/api/users/commercant/me/clients');
-    return response.data.data;
+    return response.data;
 }
 
 // --- Côté client ---
 
 export async function getMonProfilClient(): Promise<ClientProfileResponse> {
     const response = await apiClient.get('/api/users/client/me');
-    return response.data.data;
+    return response.data;
 }
 
 export async function modifierMonProfilClient(
     payload: Omit<ClientProfileResponse, 'id' | 'email' | 'accountStatus'>
 ): Promise<ClientProfileResponse> {
     const response = await apiClient.put('/api/users/client/me', payload);
-    return response.data.data;
+    return response.data;
 }
 
 export async function supprimerMonCompteClient(): Promise<void> {
@@ -61,7 +61,7 @@ export async function supprimerMonCompteClient(): Promise<void> {
 
 export async function listerMesFournisseurs(): Promise<PublicCommercantResponse[]> {
     const response = await apiClient.get('/api/users/client/me/fournisseurs');
-    return response.data.data;
+    return response.data;
 }
 
 export async function decouvrirCommercants(
@@ -72,19 +72,19 @@ export async function decouvrirCommercants(
     const response = await apiClient.get('/api/users/public/commercants', {
         params: { shopCategory, page, size },
     });
-    return response.data.data;
+    return response.data;
 }
 
 // --- Côté admin ---
 
 export async function listerCommercantsAdmin(): Promise<CommercantProfileResponse[]> {
     const response = await apiClient.get('/api/users/admin/commercants');
-    return response.data.data;
+    return response.data;
 }
 
 export async function consulterCommercantAdmin(commercantId: string): Promise<CommercantProfileResponse> {
     const response = await apiClient.get(`/api/users/admin/commercants/${commercantId}`);
-    return response.data.data;
+    return response.data;
 }
 
 export async function bloquerCompte(userId: string): Promise<void> {
@@ -101,5 +101,5 @@ export async function supprimerCompteAdmin(userId: string): Promise<void> {
 
 export async function getStatsAdmin(): Promise<AdminStatsResponse> {
     const response = await apiClient.get('/api/users/admin/stats');
-    return response.data.data;
+    return response.data;
 }

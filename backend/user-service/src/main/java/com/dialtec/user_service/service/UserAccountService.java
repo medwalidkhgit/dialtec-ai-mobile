@@ -26,6 +26,8 @@ public interface UserAccountService {
 
     void updateAccountStatus(UUID userId, AccountStatus status);
 
+    void updateEmail(UUID userId, String email);
+
     AccountStatus getAccountStatus(UUID userId);
 
     // --- Self-service commerçant ---

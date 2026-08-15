@@ -3,6 +3,8 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator
 import { useFocusEffect } from '@react-navigation/native';
 import { Button } from '../../components/Button';
 import { TextInput } from '../../components/TextInput';
+import { Header } from '../../components/Header';
+import { SecuritySection } from '../../components/SecuritySection';
 import { getMonProfilClient, modifierMonProfilClient, supprimerMonCompteClient } from '../../api/userApi';
 import { useAuth } from '../../context/AuthContext';
 import { ClientProfileResponse } from '../../types/user';
@@ -52,13 +54,6 @@ export function ProfilScreen() {
         }
     }
 
-    function handleLogout() {
-        Alert.alert('Se déconnecter ?', '', [
-            { text: 'Annuler', style: 'cancel' },
-            { text: 'Se déconnecter', style: 'destructive', onPress: logout },
-        ]);
-    }
-
     function handleDeleteAccount() {
         Alert.alert('Supprimer ton compte ?', 'Cette action est définitive. Ton profil sera supprimé.', [
             { text: 'Annuler', style: 'cancel' },
@@ -80,39 +75,60 @@ export function ProfilScreen() {
     if (isLoading || !profil) {
         return (
             <View style={styles.centered}>
-                <ActivityIndicator color={colors.primary} size="large" />
+                <ActivityIndicator color={colors.accent} size="large" />
             </View>
         );
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Mon profil</Text>
-            <Text style={styles.email}>{profil.email}</Text>
+        <View style={styles.wrapper}>
+            <Header role="client" />
 
-            {isEditing ? (
-                <>
-                    <TextInput label="Nom complet" value={fullName} onChangeText={setFullName} />
-                    <TextInput label="Téléphone" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
+            <ScrollView contentContainerStyle={styles.container}>
+                <Text style={styles.email}>{profil.email}</Text>
 
-                    <Button title="Enregistrer" onPress={handleSave} loading={isSaving} />
-                    <Button title="Annuler" variant="outline" onPress={() => setIsEditing(false)} style={styles.spacedButton} />
-                </>
-            ) : (
-                <>
-                    <ProfilRow label="Nom" value={profil.fullName} />
-                    <ProfilRow label="Téléphone" value={profil.phoneNumber} />
+                {isEditing ? (
+                    <>
+                        <TextInput label="Nom complet" dark value={fullName} onChangeText={setFullName} />
+                        <TextInput
+                            label="Téléphone"
+                            dark
+                            value={phoneNumber}
+                            onChangeText={setPhoneNumber}
+                            keyboardType="phone-pad"
+                        />
 
-                    <Button title="Modifier" variant="outline" onPress={() => setIsEditing(true)} style={styles.spacedButton} />
-                </>
-            )}
+                        <Button title="Enregistrer" onPress={handleSave} loading={isSaving} />
+                        <Button
+                            title="Annuler"
+                            variant="outline"
+                            dark
+                            onPress={() => setIsEditing(false)}
+                            style={styles.spacedButton}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <ProfilRow label="Nom" value={profil.fullName} />
+                        <ProfilRow label="Téléphone" value={profil.phoneNumber} />
 
-            <Button title="Se déconnecter" variant="primary" onPress={handleLogout} style={styles.logoutButton} />
+                        <Button
+                            title="Modifier"
+                            variant="outline"
+                            dark
+                            onPress={() => setIsEditing(true)}
+                            style={styles.spacedButton}
+                        />
+                    </>
+                )}
 
-            <TouchableOpacity onPress={handleDeleteAccount} style={styles.deleteAccountButton}>
-                <Text style={styles.deleteAccountText}>Supprimer mon compte</Text>
-            </TouchableOpacity>
-        </ScrollView>
+                <SecuritySection currentEmail={profil.email} dark />
+
+                <TouchableOpacity onPress={handleDeleteAccount} style={styles.deleteAccountButton}>
+                    <Text style={styles.deleteAccountText}>Supprimer mon compte</Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </View>
     );
 }
 
@@ -126,15 +142,14 @@ function ProfilRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    wrapper: { flex: 1, backgroundColor: colors.darkBackground },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.darkBackground },
     container: { padding: 20, paddingBottom: 60 },
-    title: { fontFamily: fonts.bold, fontSize: 24, color: colors.textPrimary, marginBottom: 4 },
-    email: { fontFamily: fonts.regular, fontSize: 14, color: colors.marine, marginBottom: 24 },
+    email: { fontFamily: fonts.regular, fontSize: 14, color: colors.darkTextSecondary, marginBottom: 24 },
     spacedButton: { marginTop: 12 },
     row: { marginBottom: 16 },
-    rowLabel: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.marine, marginBottom: 2 },
-    rowValue: { fontFamily: fonts.regular, fontSize: 16, color: colors.textPrimary },
-    logoutButton: { marginTop: 32 },
-    deleteAccountButton: { marginTop: 20, alignItems: 'center' },
+    rowLabel: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.darkTextSecondary, marginBottom: 2 },
+    rowValue: { fontFamily: fonts.regular, fontSize: 16, color: colors.darkTextPrimary },
+    deleteAccountButton: { marginTop: 32, alignItems: 'center' },
     deleteAccountText: { fontFamily: fonts.semiBold, fontSize: 14, color: '#D32F2F' },
 });

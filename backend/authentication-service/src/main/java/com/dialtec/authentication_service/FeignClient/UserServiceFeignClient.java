@@ -25,6 +25,9 @@ public interface UserServiceFeignClient {
     @PatchMapping("/api/users/internal/{userId}/status")
     void updateAccountStatus(@PathVariable("userId") UUID userId, @RequestParam("status") AccountStatus status);
 
+    @PatchMapping("/api/users/internal/{userId}/email")
+    void updateEmail(@PathVariable("userId") UUID userId, @RequestParam("email") String email);
+
     @DeleteMapping("/api/users/internal/{userId}")
     void deleteProfile(@PathVariable("userId") UUID userId);
 }

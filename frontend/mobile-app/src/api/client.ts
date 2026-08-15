@@ -5,6 +5,15 @@ import Constants from 'expo-constants';
 export const ACCESS_TOKEN_KEY = 'accessToken';
 export const REFRESH_TOKEN_KEY = 'refreshToken';
 
+/**
+ * "localhost" ne fonctionne ni sur l'émulateur Android, ni sur un
+ * téléphone physique (les deux le résoudraient vers eux-mêmes, pas vers
+ * le PC qui fait tourner api-gateway). Expo connaît déjà l'adresse
+ * réseau à laquelle le téléphone/émulateur accède au serveur de
+ * développement (Metro) — on réutilise cette même adresse pour nos
+ * appels API, plutôt que de coder une IP en dur qui changerait à
+ * chaque réseau WiFi.
+ */
 function resolveApiHost(): string {
     const debuggerHost = Constants.expoConfig?.hostUri;
     if (debuggerHost) {
@@ -29,6 +38,10 @@ apiClient.interceptors.request.use(async (config) => {
     return config;
 });
 
+// Rafraîchit automatiquement le token expiré (401), rejoue la requête
+// initiale une seule fois. Simplification assumée : si plusieurs requêtes
+// échouent en 401 en même temps, une seule déclenche le rafraîchissement,
+// les autres échouent simplement — suffisant pour la portée de ce projet.
 let isRefreshing = false;
 
 apiClient.interceptors.response.use(

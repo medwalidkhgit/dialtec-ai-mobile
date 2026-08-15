@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Pressable } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { decouvrirCommercants } from '../../api/userApi';
 import { PublicCommercantResponse } from '../../types/user';
 import { SHOP_CATEGORIES, SHOP_CATEGORY_LABELS, ShopCategory } from '../../constants/shopCategories';
@@ -13,6 +14,7 @@ type NavigationProp = NativeStackNavigationProp<FournisseursStackParamList, 'Dec
 
 export function DecouvrirCommercantsScreen() {
     const navigation = useNavigation<NavigationProp>();
+    const insets = useSafeAreaInsets();
     const [commercants, setCommercants] = useState<PublicCommercantResponse[]>([]);
     const [categorieFiltre, setCategorieFiltre] = useState<ShopCategory | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -32,7 +34,7 @@ export function DecouvrirCommercantsScreen() {
     );
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backLink}>
                 <Text style={styles.backText}>← Retour</Text>
             </TouchableOpacity>
@@ -61,7 +63,7 @@ export function DecouvrirCommercantsScreen() {
             />
 
             {isLoading ? (
-                <ActivityIndicator color={colors.primary} size="large" style={styles.loader} />
+                <ActivityIndicator color={colors.accent} size="large" style={styles.loader} />
             ) : (
                 <FlatList
                     data={commercants}
@@ -71,9 +73,7 @@ export function DecouvrirCommercantsScreen() {
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.card}
-                            onPress={() =>
-                                navigation.navigate('CommercantCatalogue', { commercantId: item.id, commercantName: item.fullName })
-                            }
+                            onPress={() => navigation.navigate('CommercantCatalogue', { commercant: item })}
                         >
                             <Text style={styles.cardName}>{item.fullName}</Text>
                             <Text style={styles.cardDetail}>{SHOP_CATEGORY_LABELS[item.shopCategory]}</Text>
@@ -87,33 +87,42 @@ export function DecouvrirCommercantsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.white, padding: 20 },
+    container: { flex: 1, backgroundColor: colors.darkBackground, paddingHorizontal: 20 },
     backLink: { marginBottom: 12 },
-    backText: { fontFamily: fonts.regular, fontSize: 16, color: colors.primary },
-    title: { fontFamily: fonts.bold, fontSize: 22, color: colors.textPrimary, marginBottom: 16 },
+    backText: { fontFamily: fonts.regular, fontSize: 16, color: colors.accent },
+    title: { fontFamily: fonts.bold, fontSize: 22, color: colors.darkTextPrimary, marginBottom: 16 },
     chipsRow: { marginBottom: 16, maxHeight: 44 },
     chip: {
         paddingVertical: 8,
         paddingHorizontal: 14,
         borderRadius: 20,
         borderWidth: 1.5,
-        borderColor: colors.marine + '40',
+        borderColor: colors.darkBorder,
         marginRight: 8,
     },
-    chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-    chipText: { fontFamily: fonts.regular, fontSize: 13, color: colors.textPrimary },
-    chipTextSelected: { color: colors.white },
+    chipSelected: {
+        backgroundColor: colors.gold,
+        borderColor: colors.gold,
+    },
+    chipText: { fontFamily: fonts.regular, fontSize: 13, color: colors.darkTextSecondary },
+    chipTextSelected: { color: colors.black, fontFamily: fonts.semiBold },
     loader: { marginTop: 40 },
     list: { paddingBottom: 40 },
-    emptyText: { fontFamily: fonts.regular, fontSize: 15, color: colors.marine, textAlign: 'center', marginTop: 40 },
+    emptyText: {
+        fontFamily: fonts.regular,
+        fontSize: 15,
+        color: colors.darkTextSecondary,
+        textAlign: 'center',
+        marginTop: 40,
+    },
     card: {
-        backgroundColor: colors.white,
+        backgroundColor: colors.darkSurface,
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: colors.marine + '20',
+        borderColor: colors.darkBorder,
     },
-    cardName: { fontFamily: fonts.semiBold, fontSize: 16, color: colors.textPrimary, marginBottom: 4 },
-    cardDetail: { fontFamily: fonts.regular, fontSize: 13, color: colors.marine },
+    cardName: { fontFamily: fonts.semiBold, fontSize: 16, color: colors.darkTextPrimary, marginBottom: 4 },
+    cardDetail: { fontFamily: fonts.regular, fontSize: 13, color: colors.darkTextSecondary },
 });

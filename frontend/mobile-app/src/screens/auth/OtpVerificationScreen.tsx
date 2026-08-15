@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput as RNTextInput, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button } from '../../components/Button';
-import { TextInput } from '../../components/TextInput';
+import { AuthBackground } from '../../components/AuthBackground';
+import { Card } from '../../components/Card';
 import { verifyOtp, resendOtp } from '../../api/authApi';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
@@ -13,13 +14,16 @@ type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'OtpVerifica
 type RouteProps = RouteProp<AuthStackParamList, 'OtpVerification'>;
 
 const RESEND_COOLDOWN_SECONDS = 60;
+const CODE_LENGTH = 6;
 
 export function OtpVerificationScreen() {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProps>();
     const { email } = route.params;
 
-    const [code, setCode] = useState('');
+    const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
+    const inputRefs = useRef<Array<RNTextInput | null>>([]);
+
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
@@ -31,7 +35,30 @@ export function OtpVerificationScreen() {
         return () => clearTimeout(timer);
     }, [cooldown]);
 
+    function handleDigitChange(text: string, index: number) {
+        const value = text.replace(/[^0-9]/g, '').slice(-1);
+        const newDigits = [...digits];
+        newDigits[index] = value;
+        setDigits(newDigits);
+
+        if (value && index < CODE_LENGTH - 1) {
+            inputRefs.current[index + 1]?.focus();
+        }
+    }
+
+    function handleKeyPress(e: any, index: number) {
+        if (e.nativeEvent.key === 'Backspace' && !digits[index] && index > 0) {
+            inputRefs.current[index - 1]?.focus();
+        }
+    }
+
     async function handleVerify() {
+        const code = digits.join('');
+        if (code.length !== CODE_LENGTH) {
+            setErrorMessage('Saisis les 6 chiffres du code.');
+            return;
+        }
+
         setErrorMessage('');
         setIsLoading(true);
         try {
@@ -59,43 +86,79 @@ export function OtpVerificationScreen() {
     }
 
     return (
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <View style={styles.container}>
-                <Text style={styles.title}>Vérification</Text>
+        <AuthBackground>
+            <Image
+                source={require('../../../assets/OpenShelf_Black_Variant.png')}
+                style={styles.logo}
+                resizeMode="contain"
+            />
+
+            <TouchableOpacity
+                onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}
+                style={styles.backButton}
+            >
+                <Text style={styles.backButtonText}>← Retour</Text>
+            </TouchableOpacity>
+
+            <Card>
+                <Text style={styles.title}>Code de Validation du Compte</Text>
                 <Text style={styles.subtitle}>Un code à 6 chiffres a été envoyé à{'\n'}{email}</Text>
 
-                <TextInput
-                    label="Code de vérification"
-                    value={code}
-                    onChangeText={setCode}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    placeholder="123456"
-                />
+                <View style={styles.otpRow}>
+                    {digits.map((digit, index) => (
+                        <RNTextInput
+                            key={index}
+                            ref={(ref) => {
+                                inputRefs.current[index] = ref;
+                            }}
+                            value={digit}
+                            onChangeText={(text) => handleDigitChange(text, index)}
+                            onKeyPress={(e) => handleKeyPress(e, index)}
+                            style={[styles.otpBox, digit ? styles.otpBoxFilled : null]}
+                            keyboardType="number-pad"
+                            maxLength={1}
+                        />
+                    ))}
+                </View>
 
                 {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
                 {successMessage ? <Text style={styles.success}>{successMessage}</Text> : null}
 
                 <Button title="Vérifier" onPress={handleVerify} loading={isLoading} />
 
-                <Button
-                    title={cooldown > 0 ? `Renvoyer le code (${cooldown}s)` : 'Renvoyer le code'}
-                    variant="outline"
-                    onPress={handleResend}
-                    disabled={cooldown > 0}
-                    style={styles.resendButton}
-                />
-            </View>
-        </KeyboardAvoidingView>
+                <TouchableOpacity onPress={handleResend} disabled={cooldown > 0} style={styles.resendLink}>
+                    <Text style={[styles.resendText, cooldown > 0 && styles.resendTextDisabled]}>
+                        {cooldown > 0 ? `Renvoyer le code (${cooldown}s)` : 'Renvoyer le code'}
+                    </Text>
+                </TouchableOpacity>
+            </Card>
+        </AuthBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    flex: { flex: 1, backgroundColor: colors.white },
-    container: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
+    logo: {
+        width: 170,
+        height: 46,
+        alignSelf: 'center',
+        marginBottom: 12,
+    },
+    backButton: {
+        alignSelf: 'center',
+        backgroundColor: colors.black,
+        borderRadius: 24,
+        paddingHorizontal: 18,
+        paddingVertical: 8,
+        marginBottom: 20,
+    },
+    backButtonText: {
+        fontFamily: fonts.semiBold,
+        fontSize: 14,
+        color: colors.white,
+    },
     title: {
         fontFamily: fonts.bold,
-        fontSize: 24,
+        fontSize: 22,
         color: colors.textPrimary,
         textAlign: 'center',
         marginBottom: 8,
@@ -105,7 +168,26 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: colors.marine,
         textAlign: 'center',
-        marginBottom: 32,
+        marginBottom: 24,
+    },
+    otpRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+    },
+    otpBox: {
+        width: 46,
+        height: 56,
+        borderWidth: 1.5,
+        borderColor: colors.marine + '40',
+        borderRadius: 12,
+        textAlign: 'center',
+        fontFamily: fonts.bold,
+        fontSize: 22,
+        color: colors.textPrimary,
+    },
+    otpBoxFilled: {
+        borderColor: colors.primary,
     },
     error: {
         fontFamily: fonts.regular,
@@ -121,7 +203,17 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         textAlign: 'center',
     },
-    resendButton: {
-        marginTop: 12,
+    resendLink: {
+        marginTop: 16,
+        alignItems: 'center',
+    },
+    resendText: {
+        fontFamily: fonts.semiBold,
+        fontSize: 14,
+        color: colors.accent,
+    },
+    resendTextDisabled: {
+        color: colors.marine,
+        opacity: 0.5,
     },
 });

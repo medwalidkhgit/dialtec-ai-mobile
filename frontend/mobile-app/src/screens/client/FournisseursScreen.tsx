@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator }
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button } from '../../components/Button';
+import { Header } from '../../components/Header';
 import { listerMesFournisseurs } from '../../api/userApi';
 import { PublicCommercantResponse } from '../../types/user';
 import { SHOP_CATEGORY_LABELS } from '../../constants/shopCategories';
@@ -27,18 +28,23 @@ export function FournisseursScreen() {
     );
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Mes fournisseurs</Text>
+        <View style={styles.wrapper}>
+            <Header role="client" />
 
-            <Button
-                title="Découvrir des commerçants"
-                variant="outline"
-                onPress={() => navigation.navigate('DecouvrirCommercants')}
-                style={styles.discoverButton}
-            />
+            <View style={styles.contentPadding}>
+                <Text style={styles.title}>Mes fournisseurs</Text>
+
+                <Button
+                    title="Découvrir des commerçants"
+                    variant="outline"
+                    dark
+                    onPress={() => navigation.navigate('DecouvrirCommercants')}
+                    style={styles.discoverButton}
+                />
+            </View>
 
             {isLoading ? (
-                <ActivityIndicator color={colors.primary} size="large" style={styles.loader} />
+                <ActivityIndicator color={colors.accent} size="large" style={styles.loader} />
             ) : (
                 <FlatList
                     data={fournisseurs}
@@ -52,9 +58,7 @@ export function FournisseursScreen() {
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.card}
-                            onPress={() =>
-                                navigation.navigate('CommercantCatalogue', { commercantId: item.id, commercantName: item.fullName })
-                            }
+                            onPress={() => navigation.navigate('CommercantCatalogue', { commercant: item })}
                         >
                             <Text style={styles.cardName}>{item.fullName}</Text>
                             <Text style={styles.cardDetail}>{SHOP_CATEGORY_LABELS[item.shopCategory]}</Text>
@@ -68,27 +72,28 @@ export function FournisseursScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.white, padding: 20 },
-    title: { fontFamily: fonts.bold, fontSize: 22, color: colors.textPrimary, marginBottom: 16 },
+    wrapper: { flex: 1, backgroundColor: colors.darkBackground },
+    contentPadding: { paddingHorizontal: 20 },
+    title: { fontFamily: fonts.bold, fontSize: 22, color: colors.darkTextPrimary, marginBottom: 16 },
     discoverButton: { marginBottom: 20 },
     loader: { marginTop: 40 },
-    list: { paddingBottom: 40 },
+    list: { paddingHorizontal: 20, paddingBottom: 40 },
     emptyText: {
         fontFamily: fonts.regular,
         fontSize: 14,
-        color: colors.marine,
+        color: colors.darkTextSecondary,
         textAlign: 'center',
         marginTop: 20,
         lineHeight: 20,
     },
     card: {
-        backgroundColor: colors.white,
+        backgroundColor: colors.darkSurface,
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: colors.marine + '20',
+        borderColor: colors.darkBorder,
     },
-    cardName: { fontFamily: fonts.semiBold, fontSize: 16, color: colors.textPrimary, marginBottom: 4 },
-    cardDetail: { fontFamily: fonts.regular, fontSize: 13, color: colors.marine },
+    cardName: { fontFamily: fonts.semiBold, fontSize: 16, color: colors.darkTextPrimary, marginBottom: 4 },
+    cardDetail: { fontFamily: fonts.regular, fontSize: 13, color: colors.darkTextSecondary },
 });

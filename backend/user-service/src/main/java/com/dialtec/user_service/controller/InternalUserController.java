@@ -46,6 +46,12 @@ public class InternalUserController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{userId}/email")
+    public ResponseEntity<Void> updateEmail(@PathVariable UUID userId, @RequestParam String email) {
+        userAccountService.updateEmail(userId, email);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> deleteProfile(@PathVariable UUID userId) {
         userAccountService.deleteAccount(userId);

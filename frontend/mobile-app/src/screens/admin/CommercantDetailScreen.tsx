@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { consulterCommercantAdmin, bloquerCompte, debloquerCompte, supprimerCompteAdmin } from '../../api/userApi';
 import { CommercantProfileResponse } from '../../types/user';
@@ -16,6 +17,7 @@ type RouteProps = RouteProp<CommercantsStackParamList, 'CommercantDetailAdmin'>;
 export function CommercantDetailScreen() {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProps>();
+    const insets = useSafeAreaInsets();
     const { commercantId } = route.params;
 
     const [commercant, setCommercant] = useState<CommercantProfileResponse | null>(null);
@@ -73,13 +75,16 @@ export function CommercantDetailScreen() {
     if (isLoading || !commercant) {
         return (
             <View style={styles.centered}>
-                <ActivityIndicator color={colors.primary} size="large" />
+                <ActivityIndicator color={colors.accent} size="large" />
             </View>
         );
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView
+            style={styles.wrapper}
+            contentContainerStyle={[styles.container, { paddingTop: insets.top + 20 }]}
+        >
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backLink}>
                 <Text style={styles.backText}>← Retour</Text>
             </TouchableOpacity>
@@ -97,6 +102,7 @@ export function CommercantDetailScreen() {
             <Button
                 title={commercant.accountStatus === 'BLOQUE' ? 'Débloquer ce compte' : 'Bloquer ce compte'}
                 variant="outline"
+                dark
                 onPress={handleToggleBlock}
                 loading={isActing}
             />
@@ -118,16 +124,17 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.darkBackground },
+    wrapper: { flex: 1, backgroundColor: colors.darkBackground },
     container: { padding: 20, paddingBottom: 60 },
     backLink: { marginBottom: 16 },
-    backText: { fontFamily: fonts.regular, fontSize: 16, color: colors.primary },
-    nom: { fontFamily: fonts.bold, fontSize: 22, color: colors.textPrimary, marginBottom: 4 },
-    email: { fontFamily: fonts.regular, fontSize: 14, color: colors.marine, marginBottom: 24 },
+    backText: { fontFamily: fonts.regular, fontSize: 16, color: colors.accent },
+    nom: { fontFamily: fonts.bold, fontSize: 22, color: colors.darkTextPrimary, marginBottom: 4 },
+    email: { fontFamily: fonts.regular, fontSize: 14, color: colors.darkTextSecondary, marginBottom: 24 },
     infoBlock: { marginBottom: 28 },
     row: { marginBottom: 14 },
-    rowLabel: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.marine, marginBottom: 2 },
-    rowValue: { fontFamily: fonts.regular, fontSize: 16, color: colors.textPrimary },
+    rowLabel: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.darkTextSecondary, marginBottom: 2 },
+    rowValue: { fontFamily: fonts.regular, fontSize: 16, color: colors.darkTextPrimary },
     deleteButton: { marginTop: 24, alignItems: 'center' },
     deleteText: { fontFamily: fonts.semiBold, fontSize: 14, color: '#D32F2F' },
 });

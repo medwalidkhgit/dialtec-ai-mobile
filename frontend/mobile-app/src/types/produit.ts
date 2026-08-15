@@ -6,6 +6,7 @@ export interface ProduitImage {
     estPrincipale: boolean;
 }
 
+/** Vue complète, réservée au commerçant propriétaire — inclut le stock. */
 export interface ProduitResponse {
     id: string;
     nom: string;
@@ -16,10 +17,11 @@ export interface ProduitResponse {
     quantite: number;
     seuilAlerte: number;
     statut: StatutFiche;
-    images: ProduitImage[];
+    images?: ProduitImage[];
     generationId: string | null;
 }
 
+/** Vue publique, sans stock — celle que voient les clients. */
 export interface PublicProduitResponse {
     id: string;
     commercantId: string;
@@ -28,7 +30,7 @@ export interface PublicProduitResponse {
     categorie: string;
     caracteristiques: string | null;
     prix: number | null;
-    images: ProduitImage[];
+    images?: ProduitImage[];
 }
 
 export interface PagedResponse<T> {

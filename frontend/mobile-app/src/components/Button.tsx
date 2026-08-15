@@ -9,16 +9,19 @@ interface ButtonProps extends PressableProps {
     title: string;
     variant?: ButtonVariant;
     loading?: boolean;
+    dark?: boolean;
 }
 
-export function Button({ title, variant = 'primary', loading = false, disabled, style, ...rest }: ButtonProps) {
+export function Button({ title, variant = 'primary', loading = false, dark, disabled, style, ...rest }: ButtonProps) {
     const isDisabled = disabled || loading;
+    const useDarkOutline = dark && variant === 'outline';
 
     return (
         <Pressable
             style={({ pressed }) => [
                 styles.base,
                 variantStyles[variant],
+                useDarkOutline && styles.darkOutline,
                 isDisabled && styles.disabled,
                 pressed && !isDisabled && styles.pressed,
                 style as any,
@@ -29,7 +32,9 @@ export function Button({ title, variant = 'primary', loading = false, disabled, 
             {loading ? (
                 <ActivityIndicator color={variant === 'accent' ? colors.accentText : colors.white} />
             ) : (
-                <Text style={[styles.text, textVariantStyles[variant]]}>{title}</Text>
+                <Text style={[styles.text, textVariantStyles[variant], useDarkOutline && styles.darkOutlineText]}>
+                    {title}
+                </Text>
             )}
         </Pressable>
     );
@@ -52,6 +57,12 @@ const styles = StyleSheet.create({
     },
     pressed: {
         opacity: 0.85,
+    },
+    darkOutline: {
+        borderColor: colors.accent,
+    },
+    darkOutlineText: {
+        color: colors.accent,
     },
 });
 
