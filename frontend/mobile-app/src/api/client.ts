@@ -5,15 +5,6 @@ import Constants from 'expo-constants';
 export const ACCESS_TOKEN_KEY = 'accessToken';
 export const REFRESH_TOKEN_KEY = 'refreshToken';
 
-/**
- * "localhost" ne fonctionne ni sur l'émulateur Android, ni sur un
- * téléphone physique (les deux le résoudraient vers eux-mêmes, pas vers
- * le PC qui fait tourner api-gateway). Expo connaît déjà l'adresse
- * réseau à laquelle le téléphone/émulateur accède au serveur de
- * développement (Metro) — on réutilise cette même adresse pour nos
- * appels API, plutôt que de coder une IP en dur qui changerait à
- * chaque réseau WiFi.
- */
 function resolveApiHost(): string {
     const debuggerHost = Constants.expoConfig?.hostUri;
     if (debuggerHost) {
@@ -63,7 +54,9 @@ apiClient.interceptors.response.use(
                     refreshToken,
                 });
 
-                const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+                // Même principe que /api/auth/login : réponse non enveloppée,
+                // directement { accessToken, refreshToken, ... }.
+                const { accessToken, refreshToken: newRefreshToken } = response.data;
                 await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
                 await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, newRefreshToken);
 

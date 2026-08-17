@@ -1,5 +1,5 @@
 export const fonts = {
-    regular: 'Inter_400Regular',
-    semiBold: 'Inter_600SemiBold',
-    bold: 'Inter_700Bold',
+    regular: 'IBMPlexSans_400Regular',
+    semiBold: 'IBMPlexSans_600SemiBold',
+    bold: 'IBMPlexSans_700Bold',
 };
