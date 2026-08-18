@@ -143,7 +143,7 @@ class JwtValidationGlobalFilterTest {
 
         StepVerifier.create(filter.filter(exchange, chain)).verifyComplete();
 
-        assertThat(exchange.getAttribute("userId")).isEqualTo("user-123");
+        assertThat(exchange.<String>getAttribute("userId")).isEqualTo("user-123");
         verify(chain, times(1)).filter(exchange);
     }
 
