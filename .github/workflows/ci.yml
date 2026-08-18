@@ -1,37 +1,86 @@
-name: CI - Build & Test (dialtec-ai-mobile) #The name of the CI pipeline that appears in the GitHub Actions section
+name: CI - Build & Test (dialtec-ai-mobile)
+# Nom affiché dans l'onglet "Actions" de GitHub, pour repérer facilement
+# ce pipeline parmi d'autres si le dépôt en contient plusieurs un jour.
 
-on: #This section answers the question : When to apply ?
-  push: #Apply this on push either to the main branch or the develop one
+on:
+  # Cette section répond à "quand déclencher ce workflow ?"
+  push:
+    # À chaque push direct sur main ou develop.
     branches: [ main, develop ]
-  pull_request: #Apply this on pull requests to main or develop before merging
+  pull_request:
+    # À chaque pull request VISANT main ou develop, avant fusion — permet
+    # de voir si les tests passent avant même d'accepter le merge.
     branches: [ main, develop ]
 
-jobs: #Each workflow could contain one or more jobs, each one is applied to its proper virtual machine, the workflow is named build in this case
+jobs:
+  # Un workflow contient un ou plusieurs jobs ; chacun tourne sur sa propre
+  # machine virtuelle, indépendamment des autres. Un seul job ici, nommé
+  # "build", mais il va s'exécuter plusieurs fois en parallèle grâce à la
+  # matrice définie plus bas.
   build:
-    runs-on: ubuntu-latest #Type of machines, GitHub is ready to execute these jobs
+    runs-on: ubuntu-latest
+    # Type de machine virtuelle fournie par GitHub pour exécuter ce job —
+    # Ubuntu est le choix standard pour des projets Java/Maven.
+
     strategy:
-      fail-fast: false #This helps GitHub to not shut down the automation to continue even if a job failed. It forces to execute them in parallel independently
+      fail-fast: false
+      # Sans ça, GitHub arrêterait TOUS les jobs restants dès qu'un seul
+      # service échoue. Avec fail-fast: false, chaque service continue
+      # d'être testé indépendamment — utile pour voir d'un coup TOUS les
+      # services qui posent problème, pas juste le premier trouvé.
+
       matrix:
-        service: #To execute two jobs in parallel using matrix.service = authentication-service and matrix.service = user-service
+        # La matrice permet d'exécuter le MÊME job plusieurs fois, une fois
+        # par valeur listée — ici, une fois par microservice. Concrètement,
+        # GitHub va lancer 6 machines virtuelles en parallèle, chacune avec
+        # matrix.service valant successivement une des 6 valeurs ci-dessous.
+        service:
           - authentication-service
           - user-service
           - product-service
           - media-service
           - ai-orchestration-service
           - api-gateway
+
     defaults:
       run:
         working-directory: backend/${{ matrix.service }}
-    steps: #The instructions (step by step)
+        # Toutes les commandes "run:" de ce job s'exécutent automatiquement
+        # depuis ce dossier — évite de répéter "cd backend/xxx &&" devant
+        # chaque commande individuellement.
+
+    steps:
+      # La liste d'actions à exécuter, dans l'ordre, pour chaque service
+      # de la matrice.
+
       - name: Checkout du code
-        uses: actions/checkout@v4 #The VM at the begining its empty, it clones the code to it
+        uses: actions/checkout@v4
+        # La machine virtuelle démarre complètement vide — cette étape
+        # clone le contenu du dépôt Git dedans, sinon rien d'autre ne
+        # pourrait fonctionner (pas de code à compiler).
 
       - name: Installation JDK 17
-        uses: actions/setup-java@v4 #Install Java 17 to the VM exactly the same configuration as Dockerfile
+        uses: actions/setup-java@v4
+        # Installe Java sur la machine virtuelle — exactement la même
+        # version que celle utilisée dans les Dockerfiles de chaque
+        # service, pour éviter tout écart de comportement entre CI et
+        # production.
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: maven #Put in the cach /m2/repository between the runs to avoid downloading the dependencies from the beginning
+          cache: maven
+          # Met en cache le dossier ~/.m2/repository (les dépendances déjà
+          # téléchargées) entre deux exécutions du workflow — évite de
+          # retélécharger les mêmes bibliothèques Maven à chaque run,
+          # accélère sensiblement les exécutions suivantes.
 
       - name: Build + tests (${{ matrix.service }})
-        run: sh mvnw -B clean verify #Lancer le Build
+        run: sh mvnw -B clean verify
+        # La vraie commande : compile le service, PUIS exécute tous les
+        # tests unitaires qu'on vient d'écrire (les 128 tests répartis sur
+        # les 6 services). "-B" (batch mode) désactive les questions
+        # interactives de Maven, indispensable en CI où personne n'est là
+        # pour répondre. "clean verify" (plutôt que juste "test") garantit
+        # un dossier de build propre à chaque fois, et échoue immédiatement
+        # si un seul test casse — bloquant volontairement la suite du
+        # pipeline dans ce cas.
