@@ -24,10 +24,6 @@ export function LoginScreen() {
     const [errorMessage, setErrorMessage] = useState('');
     const [accountNotVerified, setAccountNotVerified] = useState(false);
 
-    // Sélecteur de langue purement visuel pour l'instant — le vrai travail
-    // d'internationalisation est prévu plus tard, si le temps le permet.
-    const [langue, setLangue] = useState<'FR' | 'EN'>('FR');
-
     async function handleLogin() {
         setErrorMessage('');
         setAccountNotVerified(false);
@@ -70,15 +66,6 @@ export function LoginScreen() {
                     style={styles.logo}
                     resizeMode="contain"
                 />
-                <View style={styles.langueSelector}>
-                    <TouchableOpacity onPress={() => setLangue('FR')}>
-                        <Text style={[styles.langueText, langue === 'FR' && styles.langueTextActive]}>FR</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.langueSeparator}>/</Text>
-                    <TouchableOpacity onPress={() => setLangue('EN')}>
-                        <Text style={[styles.langueText, langue === 'EN' && styles.langueTextActive]}>EN</Text>
-                    </TouchableOpacity>
-                </View>
             </View>
 
             <Card>
@@ -133,27 +120,6 @@ const styles = StyleSheet.create({
         width: 170,
         height: 46,
         marginBottom: 6,
-    },
-    langueSelector: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    langueText: {
-        fontFamily: fonts.regular,
-        fontSize: 13,
-        color: colors.black,
-        opacity: 0.5,
-        paddingHorizontal: 4,
-    },
-    langueTextActive: {
-        fontFamily: fonts.bold,
-        opacity: 1,
-    },
-    langueSeparator: {
-        fontFamily: fonts.regular,
-        fontSize: 13,
-        color: colors.black,
-        opacity: 0.5,
     },
     title: {
         fontFamily: fonts.bold,

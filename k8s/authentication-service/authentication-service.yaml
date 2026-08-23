@@ -1,0 +1,74 @@
+# --- Deployment ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authentication-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authentication-service
+  template:
+    metadata:
+      labels:
+        app: authentication-service
+    spec:
+      containers:
+        - name: authentication-service
+          image: authentication-service:latest
+          imagePullPolicy: Never
+          # "Never" indique à Kubernetes de ne JAMAIS essayer de télécharger
+          # cette image depuis internet — elle a déjà été injectée
+          # manuellement via `minikube image load` à l'étape 1. Sans cette
+          # ligne, Kubernetes chercherait à la télécharger et échouerait
+          # (elle n'existe nulle part publiquement).
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-auth:5432/authentication_db
+              # "postgres-auth" ici = le NOM DU SERVICE Kubernetes qu'on a
+              # créé à l'étape 2 — pas une adresse IP fixe. Exactement le
+              # même principe que "postgres-auth" dans ton docker-compose.
+            - name: SPRING_DATASOURCE_USERNAME
+              value: postgres
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth-secret
+                  key: POSTGRES_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_SECRET
+            - name: SPRING_MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mail-username-secret
+                  key: MAIL_USERNAME
+            - name: SPRING_MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mail-password-secret
+                  key: MAIL_PASSWORD
+            - name: SERVICES_USER_SERVICE_URL
+              value: http://user-service:8083
+              # Référence vers un Service qui n'existe pas ENCORE (user-service
+              # arrive à une étape suivante) — normal pour l'instant, ce
+              # service ne sera simplement pas joignable tant qu'on n'aura
+              # pas déployé user-service, sans empêcher authentication-service
+              # de démarrer correctement pour autant.
+
+---
+# --- Service ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentication-service
+spec:
+  selector:
+    app: authentication-service
+  ports:
+    - port: 8082
+      targetPort: 8082

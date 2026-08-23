@@ -1,0 +1,70 @@
+# --- PersistentVolumeClaim ---
+# Réserve un espace de stockage qui SURVIT aux redémarrages du Pod.
+# Sans ça, chaque redémarrage repartirait avec une base complètement vide —
+# exactement le rôle que jouait le volume nommé dans docker-compose.yml.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-auth-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+# --- Deployment ---
+# Décrit l'état désiré : "je veux 1 exemplaire de PostgreSQL, toujours actif."
+# Kubernetes surveille en continu et relance automatiquement si ça plante.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-auth
+  template:
+    metadata:
+      labels:
+        app: postgres-auth
+    spec:
+      containers:
+        - name: postgres-auth
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: authentication_db
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-auth-pvc
+
+---
+# --- Service ---
+# Donne un nom stable ("postgres-auth") pour joindre cette base, même si
+# l'adresse IP interne du Pod change à chaque redémarrage.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-auth
+spec:
+  selector:
+    app: postgres-auth
+  ports:
+    - port: 5432
+      targetPort: 5432
