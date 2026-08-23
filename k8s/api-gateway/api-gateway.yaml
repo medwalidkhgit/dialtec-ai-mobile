@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: api-gateway:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8087
+          env:
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_SECRET
+
+---
+# Contrairement à TOUS les Services précédents (internes au cluster
+# uniquement, type ClusterIP par défaut), celui-ci utilise "NodePort" —
+# c'est le SEUL point d'entrée qui doit être joignable depuis l'extérieur
+# (ton téléphone), exactement le rôle qu'api-gateway joue déjà dans ton
+# docker-compose.yml.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+spec:
+  type: NodePort
+  selector:
+    app: api-gateway
+  ports:
+    - port: 8087
+      targetPort: 8087
+      nodePort: 30087

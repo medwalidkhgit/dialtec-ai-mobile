@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-ai-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-ai-orchestration
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-ai-orchestration
+  template:
+    metadata:
+      labels:
+        app: postgres-ai-orchestration
+    spec:
+      containers:
+        - name: postgres-ai-orchestration
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: ai_orchestration_db
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-ai-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-ai-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-ai-orchestration
+spec:
+  selector:
+    app: postgres-ai-orchestration
+  ports:
+    - port: 5432
+      targetPort: 5432

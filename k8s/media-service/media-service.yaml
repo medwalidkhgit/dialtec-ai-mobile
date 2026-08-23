@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-service
+  template:
+    metadata:
+      labels:
+        app: media-service
+    spec:
+      containers:
+        - name: media-service
+          image: media-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8085
+          env:
+            - name: STORAGE_S3_ENDPOINT
+              value: http://minio:9000
+            - name: STORAGE_S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: MINIO_ROOT_USER
+            - name: STORAGE_S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: MINIO_ROOT_PASSWORD
+            - name: STORAGE_S3_PUBLIC_URL
+              value: http://minio:9000
+              # Provisoire : reste interne au cluster pour l'instant. Cette
+              # valeur devra probablement être ajustée une fois qu'on
+              # exposera réellement les services vers l'extérieur — les
+              # URLs de fichiers générées doivent être accessibles depuis
+              # ton téléphone, pas juste depuis l'intérieur du cluster.
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_SECRET
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-service
+spec:
+  selector:
+    app: media-service
+  ports:
+    - port: 8085
+      targetPort: 8085
