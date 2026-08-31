@@ -37,6 +37,13 @@ public class JwtValidationGlobalFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        // Les fichiers (photos/audio déjà uploadés) doivent rester
+        // affichables sans jeton — un <Image> React Native ne peut pas
+        // joindre d'en-tête JWT à une simple URL de source affichée.
+        if (path.startsWith("/api/media/file/")) {
+            return chain.filter(exchange);
+        }
+
         if (path.contains("/internal/")) {
             return rejectWith(exchange, HttpStatus.FORBIDDEN, "Accès interdit.");
         }

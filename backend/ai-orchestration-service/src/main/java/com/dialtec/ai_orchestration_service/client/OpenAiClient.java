@@ -17,9 +17,15 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Deux appels distincts vers l'API OpenAI, chacun facturé séparément :
+ * transcription (Whisper, facturé à la minute d'audio) puis structuration
+ * (GPT-4o, facturé au token, entrée + sortie).
+ */
 @Component
 @Slf4j
 public class OpenAiClient {
@@ -31,6 +37,10 @@ public class OpenAiClient {
             Tu es un assistant qui aide des commerçants marocains à structurer une fiche produit.
             À partir d'une description vocale transcrite (originellement en darija) et d'une photo,
             génère une fiche produit structurée.
+            IMPORTANT : la description transcrite peut être dans n'importe quelle langue
+            (darija, français, anglais, arabe ou autre) — quelle que soit la langue
+            utilisée par le commerçant, réponds TOUJOURS en français, en traduisant
+            naturellement si nécessaire.
             Réponds UNIQUEMENT avec un objet JSON strict, exactement ces champs :
             - nom (string, obligatoire)
             - description (string, obligatoire)
@@ -58,8 +68,20 @@ public class OpenAiClient {
             exclude = HttpClientErrorException.class
     )
     public String transcrireAudio(String audioUrl) {
+        // L'URL reçue est l'URL PUBLIQUE (pensée pour l'affichage côté
+        // téléphone) — "localhost" y désigne le conteneur ai-orchestration-
+        // service lui-même, jamais MinIO. On la convertit vers le nom du
+        // service Docker interne avant de télécharger, même principe que
+        // "postgres-auth" ou "rabbitmq" utilisés ailleurs dans ce projet.
+        // Regex plutôt qu'un simple remplacement de texte fixe : capture
+        // N'IMPORTE QUELLE adresse suivie de :9000 (localhost, une IP
+        // locale qui change selon le réseau WiFi, etc.) et la redirige
+        // systématiquement vers le nom du service Docker interne — ne
+        // casse plus si l'adresse publique change à l'avenir.
+        String audioUrlInterne = audioUrl.replaceFirst("://[^/]+:9000", "://minio:9000");
+
         byte[] audioBytes = restClient.get()
-                .uri(audioUrl)
+                .uri(audioUrlInterne)
                 .retrieve()
                 .body(byte[].class);
 
@@ -68,7 +90,7 @@ public class OpenAiClient {
         body.add("file", new ByteArrayResource(audioBytes) {
             @Override
             public String getFilename() {
-                return "audio.mp3";
+                return "audio.m4a";
             }
         });
 
@@ -91,6 +113,19 @@ public class OpenAiClient {
             exclude = HttpClientErrorException.class
     )
     public FicheGenereeResult genererFiche(String texteTranscrit, String photoUrl) {
+        // OpenAI (un serveur externe, sur internet) ne peut jamais atteindre
+        // notre réseau Docker local — ni "localhost", ni "minio" ne lui sont
+        // accessibles. On télécharge donc la photo NOUS-MÊMES (comme pour
+        // l'audio), puis on l'envoie directement encodée dans la requête,
+        // plutôt que de lui donner une adresse qu'il ne pourra jamais joindre.
+        String photoUrlInterne = photoUrl.replaceFirst("://[^/]+:9000", "://minio:9000");
+        byte[] photoBytes = restClient.get()
+                .uri(photoUrlInterne)
+                .retrieve()
+                .body(byte[].class);
+        String photoBase64 = Base64.getEncoder().encodeToString(photoBytes);
+        String photoDataUri = "data:image/jpeg;base64," + photoBase64;
+
         Map<String, Object> messageSysteme = Map.of(
                 "role", "system",
                 "content", PROMPT_SYSTEME
@@ -102,7 +137,7 @@ public class OpenAiClient {
         );
         Map<String, Object> partieImage = Map.of(
                 "type", "image_url",
-                "image_url", Map.of("url", photoUrl)
+                "image_url", Map.of("url", photoDataUri)
         );
         Map<String, Object> messageUtilisateur = Map.of(
                 "role", "user",

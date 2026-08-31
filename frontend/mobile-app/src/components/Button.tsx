@@ -3,7 +3,7 @@ import { Pressable, Text, StyleSheet, ActivityIndicator, PressableProps } from '
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 
-type ButtonVariant = 'primary' | 'accent' | 'outline';
+type ButtonVariant = 'primary' | 'accent' | 'outline' | 'danger';
 
 interface ButtonProps extends PressableProps {
     title: string;
@@ -78,6 +78,9 @@ const variantStyles = StyleSheet.create({
         borderWidth: 1.5,
         borderColor: colors.primary,
     },
+    danger: {
+        backgroundColor: '#D9483A',
+    },
 });
 
 const textVariantStyles = StyleSheet.create({
@@ -89,5 +92,8 @@ const textVariantStyles = StyleSheet.create({
     },
     outline: {
         color: colors.primary,
+    },
+    danger: {
+        color: colors.white,
     },
 });

@@ -8,4 +8,8 @@ public interface StorageService {
     UploadResponse upload(MultipartFile file, String folder);
 
     void delete(String key);
+
+    DownloadedFile download(String key);
+
+    record DownloadedFile(byte[] bytes, String contentType) {}
 }

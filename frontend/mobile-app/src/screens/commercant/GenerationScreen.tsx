@@ -9,6 +9,8 @@ import {
     setAudioModeAsync,
     useAudioRecorder,
     useAudioRecorderState,
+    useAudioPlayer,
+    useAudioPlayerStatus,
 } from 'expo-audio';
 import { Button } from '../../components/Button';
 import { Header } from '../../components/Header';
@@ -28,11 +30,17 @@ export function GenerationScreen() {
 
     const [photoUri, setPhotoUri] = useState<string | null>(null);
     const [audioUri, setAudioUri] = useState<string | null>(null);
+    const [isRecordingPaused, setIsRecordingPaused] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
 
     const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
     const recorderState = useAudioRecorderState(audioRecorder);
+
+    // Le player n'a besoin d'exister qu'une fois un audio réellement
+    // enregistré — sans URI, on lui donne "null" et il reste inactif.
+    const audioPlayer = useAudioPlayer(audioUri ? { uri: audioUri } : null);
+    const playerStatus = useAudioPlayerStatus(audioPlayer);
 
     // Sans cette configuration explicite, l'enregistrement peut échouer
     // silencieusement, notamment sur iOS — trouvé dans la documentation
@@ -51,7 +59,7 @@ export function GenerationScreen() {
             return;
         }
 
-        const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+        const result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true });
         if (!result.canceled) {
             setPhotoUri(result.assets[0].uri);
         }
@@ -66,11 +74,43 @@ export function GenerationScreen() {
 
         await audioRecorder.prepareToRecordAsync();
         audioRecorder.record();
+        setIsRecordingPaused(false);
+    }
+
+    function handlePauseRecording() {
+        audioRecorder.pause();
+        setIsRecordingPaused(true);
+    }
+
+    function handleResumeRecording() {
+        audioRecorder.record();
+        setIsRecordingPaused(false);
     }
 
     async function handleStopRecording() {
         await audioRecorder.stop();
         setAudioUri(audioRecorder.uri ?? null);
+        setIsRecordingPaused(false);
+    }
+
+    function handleSupprimerAudio() {
+        if (playerStatus.playing) {
+            audioPlayer.pause();
+        }
+        setAudioUri(null);
+    }
+
+    function handleTogglePlayback() {
+        if (playerStatus.playing) {
+            audioPlayer.pause();
+        } else {
+            // Si la lecture précédente est arrivée à la fin, on repart du début
+            // plutôt que de rester bloqué sur une position déjà terminée.
+            if (playerStatus.didJustFinish) {
+                audioPlayer.seekTo(0);
+            }
+            audioPlayer.play();
+        }
     }
 
     async function handleSubmit() {
@@ -81,19 +121,21 @@ export function GenerationScreen() {
 
         setIsSubmitting(true);
         try {
-            setStatusMessage('Envoi de la photo...');
-            const photo = await uploadPhoto(photoUri);
-
-            setStatusMessage("Envoi de l'audio...");
-            const audio = await uploadAudio(audioUri);
+            setStatusMessage('Envoi de la photo et de l\'audio...');
+            // Les deux uploads sont indépendants l'un de l'autre — les lancer
+            // en parallèle (plutôt que l'un après l'autre) réduit le temps
+            // d'attente total, environ de moitié.
+            const [photo, audio] = await Promise.all([uploadPhoto(photoUri), uploadAudio(audioUri)]);
 
             setStatusMessage('Lancement de la génération...');
             const generationId = await declencherGeneration(photo.url, photo.key, audio.url, audio.key);
 
             setStatusMessage('Génération en cours, patiente quelques instants...');
             await pollGeneration(generationId);
-        } catch {
-            Alert.alert('Erreur', "Une erreur est survenue pendant l'envoi.");
+        } catch (error: any) {
+            console.error('Erreur génération - détail complet:', JSON.stringify(error?.response?.data ?? error?.message ?? error, null, 2));
+            const message = error?.response?.data?.message ?? "Une erreur est survenue pendant l'envoi.";
+            Alert.alert('Erreur', message);
             setIsSubmitting(false);
             setStatusMessage('');
         }
@@ -145,16 +187,46 @@ export function GenerationScreen() {
                     />
                 </View>
 
-                <View style={styles.captureRow}>
+                <View style={styles.audioSection}>
                     <Text style={styles.audioStatus}>
-                        {audioUri ? 'Audio enregistré ✓' : recorderState.isRecording ? 'Enregistrement en cours...' : 'Aucun audio'}
+                        {audioUri
+                            ? 'Audio enregistré ✓'
+                            : recorderState.isRecording && isRecordingPaused
+                                ? 'En pause'
+                                : recorderState.isRecording
+                                    ? 'Enregistrement en cours...'
+                                    : 'Aucun audio'}
                     </Text>
-                    <Button
-                        title={recorderState.isRecording ? "Arrêter l'enregistrement" : audioUri ? 'Réenregistrer' : 'Enregistrer'}
-                        variant="outline"
-                        dark
-                        onPress={recorderState.isRecording ? handleStopRecording : handleStartRecording}
-                    />
+
+                    {!recorderState.isRecording && !audioUri && (
+                        <Button title="Enregistrer" variant="outline" dark onPress={handleStartRecording} />
+                    )}
+
+                    {recorderState.isRecording && !isRecordingPaused && (
+                        <View style={styles.audioButtonsRow}>
+                            <Button title="Pause" style={styles.pauseButton} onPress={handlePauseRecording} />
+                            <Button title="Arrêter" variant="danger" onPress={handleStopRecording} />
+                        </View>
+                    )}
+
+                    {recorderState.isRecording && isRecordingPaused && (
+                        <View style={styles.audioButtonsRow}>
+                            <Button title="Reprendre" variant="accent" onPress={handleResumeRecording} />
+                            <Button title="Arrêter" variant="danger" onPress={handleStopRecording} />
+                        </View>
+                    )}
+
+                    {audioUri && (
+                        <View style={styles.audioButtonsRow}>
+                            <Button
+                                title={playerStatus.playing ? '⏸ Pause' : '▶ Écouter'}
+                                variant="outline"
+                                dark
+                                onPress={handleTogglePlayback}
+                            />
+                            <Button title="Supprimer" variant="danger" onPress={handleSupprimerAudio} />
+                        </View>
+                    )}
                 </View>
 
                 {isSubmitting ? (
@@ -191,6 +263,9 @@ const styles = StyleSheet.create({
     },
     placeholderText: { fontFamily: fonts.regular, color: colors.darkTextSecondary },
     audioStatus: { fontFamily: fonts.regular, fontSize: 14, color: colors.darkTextPrimary, marginBottom: 12 },
+    audioSection: { marginBottom: 24, alignItems: 'center' },
+    audioButtonsRow: { flexDirection: 'row', gap: 12 },
+    pauseButton: { backgroundColor: '#E8B93A' },
     submittingContainer: { alignItems: 'center', marginTop: 20 },
     statusText: {
         fontFamily: fonts.regular,

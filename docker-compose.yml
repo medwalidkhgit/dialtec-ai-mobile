@@ -157,11 +157,12 @@ services:
     ports:
       - "8085:8085"
     environment:
-      STORAGE_S3_ENDPOINT: http://minio:9000
-      STORAGE_S3_ACCESS_KEY: ${MINIO_ROOT_USER}
-      STORAGE_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-      STORAGE_S3_PUBLIC_URL: http://localhost:9000
-      JWT_SECRET: ${JWT_SECRET}
+        STORAGE_S3_ENDPOINT: http://minio:9000
+        STORAGE_S3_ACCESS_KEY: ${MINIO_ROOT_USER}
+        STORAGE_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+        STORAGE_S3_PUBLIC_URL: http://192.168.8.120:9000
+        MEDIA_PUBLIC_URL: http://192.168.8.120:8085
+        JWT_SECRET: ${JWT_SECRET}
   postgres-ai-orchestration:
     image: postgres:16-alpine
     container_name: postgres-ai-orchestration

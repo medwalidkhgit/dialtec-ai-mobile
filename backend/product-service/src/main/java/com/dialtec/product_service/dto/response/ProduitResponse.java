@@ -27,6 +27,6 @@ public class ProduitResponse {
     private Integer seuilAlerte;
     private boolean stockFaible; // calculé : quantite <= seuilAlerte
     private StatutFiche statut;
-    private List<String> imageUrls;
+    private List<ProduitImageResponse> images;
     private LocalDateTime createdAt;
 }

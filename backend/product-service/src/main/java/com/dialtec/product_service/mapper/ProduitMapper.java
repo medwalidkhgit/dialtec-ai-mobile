@@ -2,6 +2,7 @@ package com.dialtec.product_service.mapper;
 
 import com.dialtec.product_service.dto.request.ProduitUpdateRequest;
 import com.dialtec.product_service.dto.request.StockUpdateRequest;
+import com.dialtec.product_service.dto.response.ProduitImageResponse;
 import com.dialtec.product_service.dto.response.ProduitResponse;
 import com.dialtec.product_service.dto.response.PublicProduitResponse;
 import com.dialtec.product_service.entity.Produit;
@@ -26,7 +27,7 @@ public class ProduitMapper {
                 .seuilAlerte(produit.getSeuilAlerte())
                 .stockFaible(produit.getQuantite() <= produit.getSeuilAlerte())
                 .statut(produit.getStatut())
-                .imageUrls(extractOrderedImageUrls(produit))
+                .images(extractOrderedImages(produit))
                 .createdAt(produit.getCreatedAt())
                 .build();
     }
@@ -40,7 +41,7 @@ public class ProduitMapper {
                 .categorie(produit.getCategorie())
                 .caracteristiques(produit.getCaracteristiques())
                 .prix(produit.getPrix())
-                .imageUrls(extractOrderedImageUrls(produit))
+                .images(extractOrderedImages(produit))
                 .build();
     }
 
@@ -57,6 +58,11 @@ public class ProduitMapper {
         produit.setSeuilAlerte(request.getSeuilAlerte());
     }
 
+    /**
+     * Normalise la catégorie : espaces superflus retirés, casse uniforme.
+     * Évite la fragmentation entre "boissons", "Boissons", "BOISSONS"
+     * générées par l'IA à des moments différents pour le même concept.
+     */
     public String normalizeCategorie(String categorie) {
         if (categorie == null || categorie.isBlank()) {
             return categorie;
@@ -65,13 +71,21 @@ public class ProduitMapper {
         return Character.toUpperCase(trimmed.charAt(0)) + trimmed.substring(1);
     }
 
-    private List<String> extractOrderedImageUrls(Produit produit) {
+    /**
+     * L'image marquée "principale" apparaît toujours en premier, le reste
+     * suit dans l'ordre défini par le commerçant.
+     */
+    private List<ProduitImageResponse> extractOrderedImages(Produit produit) {
         return produit.getImages().stream()
                 .sorted(
                         Comparator.comparing(ProduitImage::isEstPrincipale).reversed()
                                 .thenComparing(ProduitImage::getOrdre)
                 )
-                .map(ProduitImage::getImageUrl)
+                .map(image -> ProduitImageResponse.builder()
+                        .id(image.getId())
+                        .imageUrl(image.getImageUrl())
+                        .estPrincipale(image.isEstPrincipale())
+                        .build())
                 .toList();
     }
 }

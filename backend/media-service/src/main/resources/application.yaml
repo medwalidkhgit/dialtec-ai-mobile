@@ -24,5 +24,5 @@ storage:
     allowed-content-types: image/jpeg,image/png,image/webp
     max-size-bytes: 10485760   # 10 Mo
   audio:
-    allowed-content-types: audio/mpeg,audio/mp4,audio/wav,audio/webm,audio/ogg
+    allowed-content-types: audio/mpeg,audio/mp4,audio/wav,audio/webm,audio/ogg,audio/x-m4a
     max-size-bytes: 15728640   # 15 Mo

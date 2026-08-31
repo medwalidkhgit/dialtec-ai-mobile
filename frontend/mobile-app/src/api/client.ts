@@ -5,6 +5,15 @@ import Constants from 'expo-constants';
 export const ACCESS_TOKEN_KEY = 'accessToken';
 export const REFRESH_TOKEN_KEY = 'refreshToken';
 
+/**
+ * "localhost" ne fonctionne ni sur l'émulateur Android, ni sur un
+ * téléphone physique (les deux le résoudraient vers eux-mêmes, pas vers
+ * le PC qui fait tourner api-gateway). Expo connaît déjà l'adresse
+ * réseau à laquelle le téléphone/émulateur accède au serveur de
+ * développement (Metro) — on réutilise cette même adresse pour nos
+ * appels API, plutôt que de coder une IP en dur qui changerait à
+ * chaque réseau WiFi.
+ */
 function resolveApiHost(): string {
     const debuggerHost = Constants.expoConfig?.hostUri;
     if (debuggerHost) {
@@ -40,7 +49,17 @@ apiClient.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry && !isRefreshing) {
+        // Un 401 sur /login ou /refresh-token signifie "identifiants invalides"
+        // ou "session déjà irrécupérable" — jamais "session expirée à
+        // rafraîchir". Les inclure dans la logique de rafraîchissement ci-
+        // dessous ferait perdre le VRAI message d'erreur (ex: "mot de passe
+        // incorrect"), remplacé silencieusement par l'échec du rafraîchissement
+        // lui-même.
+        const estEndpointAuthExclu =
+            originalRequest?.url?.includes('/api/auth/login') ||
+            originalRequest?.url?.includes('/api/auth/refresh-token');
+
+        if (error.response?.status === 401 && !estEndpointAuthExclu && !originalRequest._retry && !isRefreshing) {
             originalRequest._retry = true;
             isRefreshing = true;
 

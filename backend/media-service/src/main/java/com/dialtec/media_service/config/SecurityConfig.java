@@ -24,6 +24,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/media/internal/**").permitAll()
+                        .requestMatchers("/api/media/file/**").permitAll()
                         .requestMatchers("/api/media/me/**").hasRole("CMT")
                         .anyRequest().authenticated()
                 )

@@ -22,5 +22,5 @@ public class PublicProduitResponse {
     private String categorie;
     private String caracteristiques;
     private BigDecimal prix;
-    private List<String> imageUrls;
+    private List<ProduitImageResponse> images;
 }

@@ -9,8 +9,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -30,6 +33,9 @@ public class S3StorageServiceImpl implements StorageService {
 
     @Value("${storage.s3.public-url}")
     private String publicUrl;
+
+    @Value("${media.public-url}")
+    private String mediaPublicUrl;
 
     @Override
     public UploadResponse upload(MultipartFile file, String folder) {
@@ -51,16 +57,43 @@ public class S3StorageServiceImpl implements StorageService {
 
         return UploadResponse.builder()
                 .key(key)
-                .url(publicUrl + "/" + bucket + "/" + key)
+                // Pointe vers media-service lui-même (déjà confirmé
+                // joignable depuis le téléphone), pas directement vers
+                // MinIO — évite toute dépendance à l'accessibilité externe
+                // du port MinIO, souvent bloqué par pare-feu/WSL2/antivirus
+                // sur une machine de développement Windows.
+                .url(mediaPublicUrl + "/api/media/file/" + key)
                 .build();
     }
 
     @Override
     public void delete(String key) {
+        // Pas de gestion de "fichier introuvable" ici : DeleteObject est
+        // idempotent par nature chez S3/MinIO — supprimer une clé qui
+        // n'existe pas ou plus renvoie un succès silencieux, pas une
+        // erreur. StorageFileNotFoundException reste prévue pour un futur
+        // endpoint de consultation, mais n'a pas d'usage ici.
         s3Client.deleteObject(DeleteObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
                 .build());
+    }
+
+    @Override
+    public DownloadedFile download(String key) {
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+
+        try (ResponseInputStream<GetObjectResponse> response = s3Client.getObject(request)) {
+            byte[] bytes = response.readAllBytes();
+            String contentType = response.response().contentType();
+            return new DownloadedFile(bytes, contentType != null ? contentType : "application/octet-stream");
+        } catch (IOException e) {
+            log.error("Échec de la lecture du fichier depuis le stockage, clé={}", key, e);
+            throw new FileUploadException("Impossible de récupérer ce fichier.");
+        }
     }
 
     private String extractExtension(String filename) {

@@ -36,6 +36,9 @@ export function ProduitDetailScreen() {
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isAddingImage, setIsAddingImage] = useState(false);
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedImageIds, setSelectedImageIds] = useState<string[]>([]);
+    const [isDeletingSelection, setIsDeletingSelection] = useState(false);
 
     const [nom, setNom] = useState('');
     const [description, setDescription] = useState('');
@@ -49,6 +52,7 @@ export function ProduitDetailScreen() {
     const chargerProduit = useCallback(async () => {
         try {
             const data = await consulterMonProduit(produitId);
+            console.log('[chargerProduit] nombre d\'images reçues:', (data.images ?? []).length, JSON.stringify(data.images));
             setProduit(data);
             setNom(data.nom);
             setDescription(data.description);
@@ -82,8 +86,9 @@ export function ProduitDetailScreen() {
             });
             await chargerProduit();
             setIsEditing(false);
-        } catch {
-            Alert.alert('Erreur', "Impossible d'enregistrer les modifications.");
+        } catch (error: any) {
+            const message = error?.response?.data?.message ?? "Impossible d'enregistrer les modifications.";
+            Alert.alert('Erreur', message);
         } finally {
             setIsSaving(false);
         }
@@ -94,8 +99,9 @@ export function ProduitDetailScreen() {
         try {
             await validerProduit(produitId);
             await chargerProduit();
-        } catch {
-            Alert.alert('Erreur', 'Impossible de valider la fiche.');
+        } catch (error: any) {
+            const message = error?.response?.data?.message ?? 'Impossible de valider la fiche.';
+            Alert.alert('Erreur', message);
         } finally {
             setIsSaving(false);
         }
@@ -106,8 +112,9 @@ export function ProduitDetailScreen() {
         try {
             await mettreAJourStock(produitId, parseInt(quantite, 10), parseInt(seuilAlerte, 10));
             await chargerProduit();
-        } catch {
-            Alert.alert('Erreur', 'Impossible de mettre à jour le stock.');
+        } catch (error: any) {
+            const message = error?.response?.data?.message ?? 'Impossible de mettre à jour le stock.';
+            Alert.alert('Erreur', message);
         } finally {
             setIsSaving(false);
         }
@@ -117,20 +124,91 @@ export function ProduitDetailScreen() {
         try {
             await supprimerImage(produitId, imageId);
             await chargerProduit();
-        } catch {
-            Alert.alert('Erreur', "Impossible de supprimer l'image.");
+        } catch (error: any) {
+            const message = error?.response?.data?.message ?? "Impossible de supprimer l'image.";
+            Alert.alert('Erreur', message);
         }
     }
 
+    function toggleSelectionMode() {
+        setSelectionMode((prev) => !prev);
+        setSelectedImageIds([]);
+    }
+
+    function toggleImageSelectionnee(imageId: string) {
+        setSelectedImageIds((prev) =>
+            prev.includes(imageId) ? prev.filter((id) => id !== imageId) : [...prev, imageId]
+        );
+    }
+
+    async function handleSupprimerSelection() {
+        if (selectedImageIds.length === 0) return;
+
+        Alert.alert(
+            'Supprimer les photos',
+            `Supprimer définitivement ${selectedImageIds.length} photo(s) sélectionnée(s) ?`,
+            [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                    text: 'Supprimer',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setIsDeletingSelection(true);
+                        try {
+                            // Le backend ne propose pas de suppression groupée en un seul
+                            // appel — on déclenche donc les suppressions en parallèle,
+                            // puis on recharge une seule fois à la fin.
+                            await Promise.all(selectedImageIds.map((id) => supprimerImage(produitId, id)));
+                            await chargerProduit();
+                            setSelectionMode(false);
+                            setSelectedImageIds([]);
+                        } catch (error: any) {
+                            const message = error?.response?.data?.message ?? "Certaines images n'ont pas pu être supprimées.";
+                            Alert.alert('Erreur', message);
+                            await chargerProduit();
+                        } finally {
+                            setIsDeletingSelection(false);
+                        }
+                    },
+                },
+            ]
+        );
+    }
+
     async function handleAjouterImage() {
-        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!permission.granted) {
-            Alert.alert('Permission requise', "L'accès à la galerie est nécessaire.");
+        Alert.alert(
+            'Ajouter une photo',
+            'Comment veux-tu ajouter cette photo ?',
+            [
+                { text: 'Annuler', style: 'cancel' },
+                { text: 'Prendre une photo', onPress: () => lancerCapture('camera') },
+                { text: 'Choisir depuis la galerie', onPress: () => lancerCapture('galerie') },
+            ]
+        );
+    }
+
+    async function lancerCapture(source: 'camera' | 'galerie') {
+        let result;
+        if (source === 'camera') {
+            const permission = await ImagePicker.requestCameraPermissionsAsync();
+            if (!permission.granted) {
+                Alert.alert('Permission requise', "L'accès à la caméra est nécessaire.");
+                return;
+            }
+            result = await ImagePicker.launchCameraAsync({ quality: 0.7, allowsEditing: true });
+        } else {
+            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!permission.granted) {
+                Alert.alert('Permission requise', "L'accès à la galerie est nécessaire.");
+                return;
+            }
+            result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsEditing: true });
+        }
+        console.log('[ajout photo] résultat picker:', JSON.stringify({ canceled: result.canceled }));
+        if (result.canceled) {
+            console.log('[ajout photo] annulé par le picker — sortie ici, avant même le try/catch');
             return;
         }
-
-        const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
-        if (result.canceled) return;
 
         setIsAddingImage(true);
         try {
@@ -142,10 +220,16 @@ export function ProduitDetailScreen() {
                 compress: 0.8,
                 format: ImageManipulator.SaveFormat.JPEG,
             });
+            console.log('[ajout photo] normalisation OK, uri:', normalized.uri);
 
             const uploaded = await uploadPhoto(normalized.uri);
+            console.log('[ajout photo] upload OK:', JSON.stringify(uploaded));
+
             await ajouterImage(produitId, uploaded.url, uploaded.key);
+            console.log('[ajout photo] ajout en base OK');
+
             await chargerProduit();
+            console.log('[ajout photo] rechargement OK');
         } catch (error) {
             console.error('Erreur ajout image', error);
             Alert.alert('Erreur', "Impossible d'ajouter cette image.");
@@ -164,8 +248,9 @@ export function ProduitDetailScreen() {
                     try {
                         await supprimerProduit(produitId);
                         navigation.goBack();
-                    } catch {
-                        Alert.alert('Erreur', 'Impossible de supprimer le produit.');
+                    } catch (error: any) {
+                        const message = error?.response?.data?.message ?? 'Impossible de supprimer le produit.';
+                        Alert.alert('Erreur', message);
                     }
                 },
             },
@@ -189,24 +274,69 @@ export function ProduitDetailScreen() {
                 <Text style={styles.backText}>← Retour</Text>
             </TouchableOpacity>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesRow}>
-                {(produit.images ?? []).map((image) => (
-                    <View key={image.id} style={styles.imageWrapper}>
-                        <Image source={{ uri: image.imageUrl }} style={styles.image} />
-                        <TouchableOpacity style={styles.deleteImageButton} onPress={() => handleSupprimerImage(image.id)}>
-                            <Text style={styles.deleteImageText}>✕</Text>
-                        </TouchableOpacity>
-                    </View>
-                ))}
+            <View style={styles.imagesHeaderRow}>
+                <Text style={styles.sectionLabel}>Photos</Text>
+                {(produit.images ?? []).length > 0 && (
+                    <TouchableOpacity onPress={toggleSelectionMode}>
+                        <Text style={styles.selectionToggleText}>{selectionMode ? 'Annuler' : 'Gérer les photos'}</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
 
-                <TouchableOpacity style={styles.addImageButton} onPress={handleAjouterImage} disabled={isAddingImage}>
-                    {isAddingImage ? (
-                        <ActivityIndicator color={colors.accent} />
-                    ) : (
-                        <Text style={styles.addImageText}>+</Text>
-                    )}
-                </TouchableOpacity>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesRow}>
+                {(produit.images ?? []).map((image) => {
+                    const estSelectionnee = selectedImageIds.includes(image.id);
+                    return (
+                        <TouchableOpacity
+                            key={image.id}
+                            style={styles.imageWrapper}
+                            activeOpacity={selectionMode ? 0.7 : 1}
+                            onPress={() => selectionMode && toggleImageSelectionnee(image.id)}
+                        >
+                            <Image
+                                source={{ uri: image.imageUrl }}
+                                onError={(e) => console.log('[Image] ÉCHEC CHARGEMENT:', image.imageUrl, JSON.stringify(e.nativeEvent))}
+                                onLoad={() => console.log('[Image] succès:', image.imageUrl)}
+                                style={[styles.image, selectionMode && estSelectionnee && styles.imageSelectionnee]}
+                            />
+                            {selectionMode ? (
+                                <View style={[styles.checkboxBadge, estSelectionnee && styles.checkboxBadgeCochee]}>
+                                    {estSelectionnee && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                                </View>
+                            ) : (
+                                <TouchableOpacity style={styles.deleteImageButton} onPress={() => handleSupprimerImage(image.id)}>
+                                    <Text style={styles.deleteImageText}>✕</Text>
+                                </TouchableOpacity>
+                            )}
+                        </TouchableOpacity>
+                    );
+                })}
+
+                {!selectionMode && (
+                    <TouchableOpacity style={styles.addImageButton} onPress={handleAjouterImage} disabled={isAddingImage}>
+                        {isAddingImage ? (
+                            <ActivityIndicator color={colors.accent} />
+                        ) : (
+                            <Text style={styles.addImageText}>+</Text>
+                        )}
+                    </TouchableOpacity>
+                )}
             </ScrollView>
+
+            {selectionMode && (
+                <View style={styles.selectionActionBar}>
+                    <Text style={styles.selectionCountText}>
+                        {selectedImageIds.length} sélectionnée{selectedImageIds.length > 1 ? 's' : ''}
+                    </Text>
+                    <Button
+                        title="Supprimer"
+                        variant="danger"
+                        onPress={handleSupprimerSelection}
+                        loading={isDeletingSelection}
+                        disabled={selectedImageIds.length === 0}
+                    />
+                </View>
+            )}
 
             {produit.statut === 'EN_ATTENTE_VALIDATION' && (
                 <View style={styles.pendingBanner}>
@@ -282,9 +412,46 @@ const styles = StyleSheet.create({
     container: { padding: 20, paddingBottom: 60 },
     backLink: { marginBottom: 16 },
     backText: { fontFamily: fonts.regular, fontSize: 16, color: colors.accent },
+    imagesHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    sectionLabel: { fontFamily: fonts.semiBold, fontSize: 15, color: colors.darkTextPrimary },
+    selectionToggleText: { fontFamily: fonts.semiBold, fontSize: 14, color: colors.accent },
     imagesRow: { marginBottom: 16 },
     imageWrapper: { marginRight: 10, position: 'relative' },
     image: { width: 140, height: 140, borderRadius: 12 },
+    imageSelectionnee: { opacity: 0.5 },
+    checkboxBadge: {
+        position: 'absolute',
+        top: 6,
+        right: 6,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: colors.white,
+        backgroundColor: colors.black + '55',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxBadgeCochee: {
+        backgroundColor: colors.accent,
+        borderColor: colors.accent,
+    },
+    checkboxCheckmark: { color: colors.white, fontSize: 13, fontFamily: fonts.bold },
+    selectionActionBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: colors.darkSurface,
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 16,
+    },
+    selectionCountText: { fontFamily: fonts.semiBold, fontSize: 15, color: colors.darkTextPrimary },
     deleteImageButton: {
         position: 'absolute',
         top: 6,
