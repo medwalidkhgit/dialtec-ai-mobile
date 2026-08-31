@@ -51,7 +51,14 @@ export function RegisterClientScreen() {
 
             navigation.navigate('OtpVerification', { email: email.trim() });
         } catch (error: any) {
-            const message = error?.response?.data?.message ?? 'Une erreur est survenue. Réessaie.';
+            // Pour une erreur de validation (400), le vrai détail par champ est
+            // dans response.data.data (ex: {"password": "ne doit pas être vide"}),
+            // jamais dans le simple message générique "Erreur de validation".
+            const erreursParChamp = error?.response?.data?.data;
+            const message =
+                erreursParChamp && typeof erreursParChamp === 'object'
+                    ? Object.values(erreursParChamp).join('\n')
+                    : (error?.response?.data?.message ?? 'Une erreur est survenue. Réessaie.');
             setErrorMessage(message);
         } finally {
             setIsLoading(false);

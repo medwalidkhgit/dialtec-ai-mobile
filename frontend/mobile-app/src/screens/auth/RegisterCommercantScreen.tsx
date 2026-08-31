@@ -68,7 +68,11 @@ export function RegisterCommercantScreen() {
 
             navigation.navigate('OtpVerification', { email: email.trim() });
         } catch (error: any) {
-            const message = error?.response?.data?.message ?? 'Une erreur est survenue. Réessaie.';
+            const erreursParChamp = error?.response?.data?.data;
+            const message =
+                erreursParChamp && typeof erreursParChamp === 'object'
+                    ? Object.values(erreursParChamp).join('\n')
+                    : (error?.response?.data?.message ?? 'Une erreur est survenue. Réessaie.');
             setErrorMessage(message);
         } finally {
             setIsLoading(false);

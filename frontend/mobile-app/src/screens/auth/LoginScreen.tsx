@@ -52,7 +52,16 @@ export function LoginScreen() {
             navigation.navigate('OtpVerification', { email: email.trim() });
         } catch (error: any) {
             const message = error?.response?.data?.message ?? "Impossible d'envoyer le code.";
-            setErrorMessage(message);
+
+            // Un refus "trop tôt" (anti-spam) signifie qu'un code valide a déjà
+            // été envoyé très récemment (par exemple lors d'un changement
+            // d'email) — on doit quand même laisser l'utilisateur accéder à
+            // l'écran de saisie pour l'utiliser, pas le bloquer avec une erreur.
+            if (message.toLowerCase().includes('patienter')) {
+                navigation.navigate('OtpVerification', { email: email.trim() });
+            } else {
+                setErrorMessage(message);
+            }
         } finally {
             setIsLoading(false);
         }
