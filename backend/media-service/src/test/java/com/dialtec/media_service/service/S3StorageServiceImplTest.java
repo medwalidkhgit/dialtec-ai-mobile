@@ -40,6 +40,7 @@ class S3StorageServiceImplTest {
         // contexte Spring) — sans ça, bucket/publicUrl vaudraient null.
         ReflectionTestUtils.setField(storageService, "bucket", "dialtec-bucket");
         ReflectionTestUtils.setField(storageService, "publicUrl", "http://localhost:9000");
+        ReflectionTestUtils.setField(storageService, "mediaPublicUrl", "http://localhost:8087");
     }
 
     @Test
@@ -49,7 +50,11 @@ class S3StorageServiceImplTest {
         UploadResponse result = storageService.upload(file, "produits");
 
         assertThat(result.getKey()).startsWith("produits/").endsWith(".jpg");
-        assertThat(result.getUrl()).isEqualTo("http://localhost:9000/dialtec-bucket/" + result.getKey());
+        // Depuis l'introduction du proxy media-service (contournement du
+        // blocage iOS sur le chargement d'images en HTTP direct vers
+        // MinIO), l'URL construite pointe désormais vers media-service
+        // lui-même, pas directement vers MinIO.
+        assertThat(result.getUrl()).isEqualTo("http://localhost:8087/api/media/file/" + result.getKey());
     }
 
     @Test

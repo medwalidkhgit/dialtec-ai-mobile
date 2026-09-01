@@ -1,1 +1,0 @@
-UPDATE auth_users SET password = '$2b$10$YOtG5RN1d/atP4jiRHEUneRrLhd/INeX5Qol67k0GGg.qdGlvhK1.' WHERE email = 'admin@dialtec.ma';
