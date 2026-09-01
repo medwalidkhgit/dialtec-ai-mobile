@@ -14,8 +14,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: api-gateway:latest
-          imagePullPolicy: Never
+          image: 942304845351.dkr.ecr.eu-west-3.amazonaws.com/api-gateway:latest
           ports:
             - containerPort: 8087
           env:
@@ -31,19 +30,19 @@ spec:
 
 ---
 # Contrairement à TOUS les Services précédents (internes au cluster
-# uniquement, type ClusterIP par défaut), celui-ci utilise "NodePort" —
-# c'est le SEUL point d'entrée qui doit être joignable depuis l'extérieur
-# (ton téléphone), exactement le rôle qu'api-gateway joue déjà dans ton
-# docker-compose.yml.
+# uniquement, type ClusterIP par défaut), celui-ci doit être joignable
+# depuis l'extérieur — le SEUL point d'entrée public de toute
+# l'application. "LoadBalancer" (plutôt que "NodePort", utilisé en local
+# sur Minikube) déclenche AWS pour provisionner un vrai équilibreur de
+# charge, avec une adresse publique réelle, accessible depuis n'importe où.
 apiVersion: v1
 kind: Service
 metadata:
   name: api-gateway
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: api-gateway
   ports:
     - port: 8087
       targetPort: 8087
-      nodePort: 30087

@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class OtpVerificationRequest {
 
     @NotBlank
-    @Email
+    @Email(message = "Format d'email invalide.")
     private String email;
 
     @NotBlank

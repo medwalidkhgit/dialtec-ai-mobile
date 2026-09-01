@@ -14,8 +14,7 @@ spec:
     spec:
       containers:
         - name: media-service
-          image: media-service:latest
-          imagePullPolicy: Never
+          image: 942304845351.dkr.ecr.eu-west-3.amazonaws.com/media-service:latest
           ports:
             - containerPort: 8085
           env:
@@ -33,11 +32,11 @@ spec:
                   key: MINIO_ROOT_PASSWORD
             - name: STORAGE_S3_PUBLIC_URL
               value: http://minio:9000
-              # Provisoire : reste interne au cluster pour l'instant. Cette
-              # valeur devra probablement être ajustée une fois qu'on
-              # exposera réellement les services vers l'extérieur — les
-              # URLs de fichiers générées doivent être accessibles depuis
-              # ton téléphone, pas juste depuis l'intérieur du cluster.
+              # Reste interne au cluster — les vraies URLs affichées à
+              # l'utilisateur passent par MEDIA_PUBLIC_URL ci-dessous, pas
+              # celle-ci directement.
+            - name: MEDIA_PUBLIC_URL
+              value: "https://dk005oic22m5k.cloudfront.net"
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

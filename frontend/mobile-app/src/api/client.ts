@@ -22,7 +22,14 @@ function resolveApiHost(): string {
     return 'localhost';
 }
 
-export const API_BASE_URL = `http://${resolveApiHost()}:8087`;
+// Passe à "true" temporairement pour tester contre le vrai cluster EKS
+// (via CloudFront) plutôt que le backend local — remets à "false" pour
+// revenir au développement local normal.
+const UTILISER_EKS_POUR_TEST = true;
+
+export const API_BASE_URL = UTILISER_EKS_POUR_TEST
+    ? 'https://dk005oic22m5k.cloudfront.net'
+    : `http://${resolveApiHost()}:8087`;
 
 export const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -32,6 +39,7 @@ export const apiClient = axios.create({
 // Attache automatiquement le token à chaque requête sortante, si présent.
 apiClient.interceptors.request.use(async (config) => {
     const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+    console.log(`[intercepteur] ${config.url} — token trouvé:`, token ? `oui (${token.slice(0, 15)}...)` : 'NON');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }

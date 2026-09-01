@@ -68,6 +68,7 @@ public class OpenAiClient {
             exclude = HttpClientErrorException.class
     )
     public String transcrireAudio(String audioUrl) {
+        log.info("URL audio reçue, telle quelle avant tout traitement : [{}]", audioUrl);
         // L'URL reçue est l'URL PUBLIQUE (pensée pour l'affichage côté
         // téléphone) — "localhost" y désigne le conteneur ai-orchestration-
         // service lui-même, jamais MinIO. On la convertit vers le nom du
@@ -79,6 +80,7 @@ public class OpenAiClient {
         // systématiquement vers le nom du service Docker interne — ne
         // casse plus si l'adresse publique change à l'avenir.
         String audioUrlInterne = audioUrl.replaceFirst("://[^/]+:9000", "://minio:9000");
+        log.info("URL audio après traitement, utilisée pour le téléchargement : [{}]", audioUrlInterne);
 
         byte[] audioBytes = restClient.get()
                 .uri(audioUrlInterne)

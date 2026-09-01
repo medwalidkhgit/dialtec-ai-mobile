@@ -14,8 +14,7 @@ spec:
     spec:
       containers:
         - name: ai-orchestration-service
-          image: ai-orchestration-service:latest
-          imagePullPolicy: Never
+          image: 942304845351.dkr.ecr.eu-west-3.amazonaws.com/ai-orchestration-service:latest
           ports:
             - containerPort: 8086
           env:

@@ -14,8 +14,7 @@ spec:
     spec:
       containers:
         - name: product-service
-          image: product-service:latest
-          imagePullPolicy: Never
+          image: 942304845351.dkr.ecr.eu-west-3.amazonaws.com/product-service:latest
           ports:
             - containerPort: 8084
           env:

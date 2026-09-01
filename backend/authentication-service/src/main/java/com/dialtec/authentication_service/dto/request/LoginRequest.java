@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public class LoginRequest {
 
     @NotBlank
-    @Email
+    @Email(message = "Format d'email invalide.")
     private String email;
 
     @NotBlank

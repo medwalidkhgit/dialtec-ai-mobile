@@ -15,13 +15,9 @@ spec:
     spec:
       containers:
         - name: authentication-service
-          image: authentication-service:latest
-          imagePullPolicy: Never
-          # "Never" indique à Kubernetes de ne JAMAIS essayer de télécharger
-          # cette image depuis internet — elle a déjà été injectée
-          # manuellement via `minikube image load` à l'étape 1. Sans cette
-          # ligne, Kubernetes chercherait à la télécharger et échouerait
-          # (elle n'existe nulle part publiquement).
+          image: 942304845351.dkr.ecr.eu-west-3.amazonaws.com/authentication-service:latest
+          # Sur EKS, l'image est tirée directement depuis ECR — plus besoin
+          # d'imagePullPolicy: Never (spécifique à Minikube en local).
           ports:
             - containerPort: 8082
           env:

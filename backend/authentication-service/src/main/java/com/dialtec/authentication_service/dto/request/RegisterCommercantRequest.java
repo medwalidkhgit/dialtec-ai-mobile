@@ -17,14 +17,17 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RegisterCommercantRequest {
 
+    // --- Credentials (authentication-service) ---
+
     @NotBlank
-    @Email
+    @Email(message = "Format d'email invalide.")
     private String email;
 
     @NotBlank
     @Size(min = 8, message = "Le mot de passe doit contenir au moins 8 caractères")
     private String password;
 
+    // --- Profil du commerçant (transmis à user-service) ---
 
     @NotBlank
     @Size(max = 100)

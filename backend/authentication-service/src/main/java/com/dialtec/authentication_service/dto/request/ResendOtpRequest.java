@@ -14,6 +14,6 @@ import lombok.NoArgsConstructor;
 public class ResendOtpRequest {
 
     @NotBlank
-    @Email
+    @Email(message = "Format d'email invalide.")
     private String email;
 }

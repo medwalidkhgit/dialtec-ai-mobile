@@ -9,6 +9,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Inscription pour un client (marketplace). Volontairement minimal :
+ * pas d'infos de livraison tant qu'il n'y a pas de commande/paiement
+ * (Stripe, prévu pour plus tard).
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -16,7 +21,7 @@ import lombok.NoArgsConstructor;
 public class RegisterClientRequest {
 
     @NotBlank
-    @Email
+    @Email(message = "Format d'email invalide.")
     private String email;
 
     @NotBlank

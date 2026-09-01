@@ -23,7 +23,7 @@ import { GenerationStackParamList } from '../../navigation/types';
 type NavigationProp = NativeStackNavigationProp<GenerationStackParamList, 'GenerationCapture'>;
 
 const POLL_INTERVAL_MS = 3000;
-const POLL_MAX_ATTEMPTS = 20;
+const POLL_MAX_ATTEMPTS = 40; // 120 secondes au total — plus de marge sur un vrai réseau internet qu'en local
 
 export function GenerationScreen() {
     const navigation = useNavigation<NavigationProp>();
@@ -159,7 +159,12 @@ export function GenerationScreen() {
             setPhotoUri(null);
             setAudioUri(null);
             navigation.navigate('ProduitDetail', { produitId: produit.id });
-        } catch {
+        } catch (error: any) {
+            console.log(
+                `[pollGeneration] tentative ${attempt + 1}/${POLL_MAX_ATTEMPTS} échouée:`,
+                error?.response?.status,
+                error?.response?.data?.message ?? error?.message
+            );
             setTimeout(() => pollGeneration(generationId, attempt + 1), POLL_INTERVAL_MS);
         }
     }
