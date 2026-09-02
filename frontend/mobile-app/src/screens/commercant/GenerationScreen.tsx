@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Image, Alert, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Slider from '@react-native-community/slider';
@@ -46,7 +46,6 @@ export function GenerationScreen() {
 
     const [photoUri, setPhotoUri] = useState<string | null>(null);
     const [audioUri, setAudioUri] = useState<string | null>(null);
-    const [isRecordingPaused, setIsRecordingPaused] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [etapeEnvoiActuelle, setEtapeEnvoiActuelle] = useState(0);
     const [generationReussie, setGenerationReussie] = useState(false);
@@ -94,26 +93,51 @@ export function GenerationScreen() {
 
         await audioRecorder.prepareToRecordAsync();
         audioRecorder.record();
-        setIsRecordingPaused(false);
     }
 
-    function handlePauseRecording() {
-        audioRecorder.pause();
-        setIsRecordingPaused(true);
-    }
-
-    function handleResumeRecording() {
-        audioRecorder.record();
-        setIsRecordingPaused(false);
-    }
-
-    // Distinct de la pause — finalise réellement le fichier, seul moyen de
-    // le rendre écoutable et déplaçable sur la barre de progression. Un
-    // enregistrement "en pause" n'est pas encore un fichier audio valide.
-    async function handleTerminerEnregistrement() {
+    // "Pause" finalise directement l'enregistrement (stop, pas pause) — la
+    // méthode pause() native s'est révélée peu fiable en test (réinitialise
+    // le chronomètre au lieu de vraiment mettre en pause). stop() est,
+    // lui, confirmé fiable — préférence pour la stabilité, à quelques
+    // minutes de la démo, plutôt qu'une fonctionnalité de reprise risquée.
+    async function handlePauseRecording() {
         await audioRecorder.stop();
         setAudioUri(audioRecorder.uri ?? null);
-        setIsRecordingPaused(false);
+    }
+
+    function handleAnnulerTout() {
+        Alert.alert(
+            'Annuler et recommencer ?',
+            'La photo et l\'audio en cours seront définitivement perdus.',
+            [
+                { text: 'Non', style: 'cancel' },
+                {
+                    text: 'Oui, tout annuler',
+                    style: 'destructive',
+                    onPress: async () => {
+                        if (recorderState.isRecording) {
+                            await audioRecorder.stop();
+                        }
+                        if (playerStatus.playing) {
+                            audioPlayer.pause();
+                        }
+                        setPhotoUri(null);
+                        setAudioUri(null);
+                    },
+                },
+            ]
+        );
+    }
+
+    // Distincte de handleSupprimerAudio — celle-ci s'utilise PENDANT
+    // l'enregistrement actif (pas après). Elle doit réellement arrêter le
+    // micro (l'ancienne version ne le faisait pas, d'où le bouton qui ne
+    // semblait "rien faire"), puis relance directement un nouvel
+    // enregistrement à zéro, sans repasser par l'écran d'attente.
+    async function handleRecommencerEnregistrement() {
+        await audioRecorder.stop();
+        await audioRecorder.prepareToRecordAsync();
+        audioRecorder.record();
     }
 
     function handleSupprimerAudio() {
@@ -121,7 +145,6 @@ export function GenerationScreen() {
             audioPlayer.pause();
         }
         setAudioUri(null);
-        setIsRecordingPaused(false);
     }
 
     function handleTogglePlayback() {
@@ -208,6 +231,12 @@ export function GenerationScreen() {
                     description audio en renseignant les informations nécessaires.
                 </Text>
 
+                {(photoUri || audioUri || recorderState.isRecording) && (
+                    <TouchableOpacity onPress={handleAnnulerTout} style={styles.annulerLink}>
+                        <Text style={styles.annulerLinkText}>✕ Annuler et recommencer</Text>
+                    </TouchableOpacity>
+                )}
+
                 {/* Étape 1 — Photo */}
                 <View style={styles.etapeBlock}>
                     <View style={styles.etapeHeader}>
@@ -251,7 +280,7 @@ export function GenerationScreen() {
                     )}
 
                     {/* État 2 — enregistrement actif */}
-                    {recorderState.isRecording && !isRecordingPaused && (
+                    {recorderState.isRecording && (
                         <View style={styles.audioActifContainer}>
                             <View style={styles.dureeRow}>
                                 <View style={styles.pointRouge} />
@@ -259,24 +288,12 @@ export function GenerationScreen() {
                             </View>
                             <View style={styles.audioButtonsRow}>
                                 <Button title="Pause" style={styles.pauseButton} onPress={handlePauseRecording} />
-                                <Button title="Supprimer" variant="danger" onPress={handleSupprimerAudio} />
+                                <Button title="Recommencer" variant="danger" onPress={handleRecommencerEnregistrement} />
                             </View>
                         </View>
                     )}
 
-                    {/* État 3 — en pause, pas encore finalisé */}
-                    {recorderState.isRecording && isRecordingPaused && (
-                        <View style={styles.audioActifContainer}>
-                            <Text style={styles.dureeText}>{formatDuree(recorderState.durationMillis ?? 0)} — en pause</Text>
-                            <View style={styles.audioButtonsRow}>
-                                <Button title="Reprendre" variant="accent" onPress={handleResumeRecording} />
-                                <Button title="Terminer" variant="outline" dark onPress={handleTerminerEnregistrement} />
-                                <Button title="Supprimer" variant="danger" onPress={handleSupprimerAudio} />
-                            </View>
-                        </View>
-                    )}
-
-                    {/* État 4 — finalisé, écoute avec curseur déplaçable */}
+                    {/* État 3 — finalisé, écoute avec curseur déplaçable */}
                     {audioUri && (
                         <View style={styles.lectureContainer}>
                             <View style={styles.lectureRow}>
@@ -377,6 +394,8 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 20,
     },
+    annulerLink: { alignItems: 'center', marginBottom: 20, marginTop: -12 },
+    annulerLinkText: { fontFamily: fonts.semiBold, fontSize: 13, color: '#D32F2F' },
     etapeBlock: { marginBottom: 24 },
     etapeHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
     etapeBadge: {

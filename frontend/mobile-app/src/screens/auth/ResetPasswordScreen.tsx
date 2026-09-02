@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput as RNTextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -33,6 +33,12 @@ export function ResetPasswordScreen() {
     const [errorMessage, setErrorMessage] = useState('');
     const [cooldown, setCooldown] = useState(0);
     const [reinitialisationReussie, setReinitialisationReussie] = useState(false);
+
+    useEffect(() => {
+        if (cooldown === 0) return;
+        const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [cooldown]);
 
     function handleDigitChange(text: string, index: number) {
         const value = text.replace(/[^0-9]/g, '').slice(-1);
