@@ -4,6 +4,8 @@ export type AuthStackParamList = {
     RegisterCommercant: undefined;
     RegisterClient: undefined;
     OtpVerification: { email: string };
+    ForgotPassword: undefined;
+    ResetPassword: { email: string };
 };
 
 export type CommercantStackParamList = {

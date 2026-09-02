@@ -1,24 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput as RNTextInput, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput as RNTextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button } from '../../components/Button';
+import { TextInput } from '../../components/TextInput';
 import { AuthBackground } from '../../components/AuthBackground';
 import { Card } from '../../components/Card';
-import { verifyOtp, resendOtp } from '../../api/authApi';
-import { colors } from '../../theme/colors';
-import { fonts } from '../../theme/typography';
 import { AlertBanner } from '../../components/AlertBanner';
 import { SuccessModal } from '../../components/SuccessModal';
+import { resetPassword, forgotPassword } from '../../api/authApi';
+import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/typography';
 import { AuthStackParamList } from '../../navigation/types';
 
-type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'OtpVerification'>;
-type RouteProps = RouteProp<AuthStackParamList, 'OtpVerification'>;
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ResetPassword'>;
+type RouteProps = RouteProp<AuthStackParamList, 'ResetPassword'>;
 
-const RESEND_COOLDOWN_SECONDS = 60;
 const CODE_LENGTH = 6;
+const RESEND_COOLDOWN_SECONDS = 60;
 
-export function OtpVerificationScreen() {
+export function ResetPasswordScreen() {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProps>();
     const { email } = route.params;
@@ -26,17 +27,12 @@ export function OtpVerificationScreen() {
     const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
     const inputRefs = useRef<Array<RNTextInput | null>>([]);
 
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
     const [cooldown, setCooldown] = useState(0);
-    const [verificationReussie, setVerificationReussie] = useState(false);
-
-    useEffect(() => {
-        if (cooldown === 0) return;
-        const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
-        return () => clearTimeout(timer);
-    }, [cooldown]);
+    const [reinitialisationReussie, setReinitialisationReussie] = useState(false);
 
     function handleDigitChange(text: string, index: number) {
         const value = text.replace(/[^0-9]/g, '').slice(-1);
@@ -55,32 +51,34 @@ export function OtpVerificationScreen() {
         }
     }
 
-    async function handleVerify() {
+    async function handleValider() {
         const code = digits.join('');
         if (code.length !== CODE_LENGTH) {
             setErrorMessage('Saisis les 6 chiffres du code.');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setErrorMessage('Les mots de passe ne correspondent pas.');
             return;
         }
 
         setErrorMessage('');
         setIsLoading(true);
         try {
-            await verifyOtp(email, code);
-            setVerificationReussie(true);
+            await resetPassword({ email, code, newPassword });
+            setReinitialisationReussie(true);
         } catch (error: any) {
-            const message = error?.response?.data?.message ?? 'Code invalide. Réessaie.';
+            const message = error?.response?.data?.message ?? 'Code invalide ou expiré.';
             setErrorMessage(message);
         } finally {
             setIsLoading(false);
         }
     }
 
-    async function handleResend() {
+    async function handleRenvoyer() {
         setErrorMessage('');
-        setSuccessMessage('');
         try {
-            await resendOtp(email);
-            setSuccessMessage('Un nouveau code a été envoyé.');
+            await forgotPassword(email);
             setCooldown(RESEND_COOLDOWN_SECONDS);
         } catch (error: any) {
             const message = error?.response?.data?.message ?? 'Impossible de renvoyer le code.';
@@ -90,21 +88,8 @@ export function OtpVerificationScreen() {
 
     return (
         <AuthBackground>
-            <Image
-                source={require('../../../assets/OpenShelf_Black_Variant.png')}
-                style={styles.logo}
-                resizeMode="contain"
-            />
-
-            <TouchableOpacity
-                onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}
-                style={styles.backButton}
-            >
-                <Text style={styles.backButtonText}>← Retour</Text>
-            </TouchableOpacity>
-
             <Card>
-                <Text style={styles.title}>Code de Validation du Compte</Text>
+                <Text style={styles.title}>Nouveau mot de passe</Text>
                 <Text style={styles.subtitle}>Un code à 6 chiffres a été envoyé à{'\n'}{email}</Text>
 
                 <View style={styles.otpRow}>
@@ -124,12 +109,24 @@ export function OtpVerificationScreen() {
                     ))}
                 </View>
 
+                <TextInput
+                    label="Nouveau mot de passe"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    secureTextEntry
+                />
+                <TextInput
+                    label="Confirmer le nouveau mot de passe"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry
+                />
+
                 <AlertBanner message={errorMessage} variant="error" />
-                <AlertBanner message={successMessage} variant="success" />
 
-                <Button title="Vérifier" onPress={handleVerify} loading={isLoading} />
+                <Button title="Réinitialiser le mot de passe" onPress={handleValider} loading={isLoading} />
 
-                <TouchableOpacity onPress={handleResend} disabled={cooldown > 0} style={styles.resendLink}>
+                <TouchableOpacity onPress={handleRenvoyer} disabled={cooldown > 0} style={styles.resendLink}>
                     <Text style={[styles.resendText, cooldown > 0 && styles.resendTextDisabled]}>
                         {cooldown > 0 ? `Renvoyer le code (${cooldown}s)` : 'Renvoyer le code'}
                     </Text>
@@ -137,8 +134,8 @@ export function OtpVerificationScreen() {
             </Card>
 
             <SuccessModal
-                visible={verificationReussie}
-                title="Vérification réussie"
+                visible={reinitialisationReussie}
+                title="Mot de passe réinitialisé"
                 onDone={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}
             />
         </AuthBackground>
@@ -146,38 +143,20 @@ export function OtpVerificationScreen() {
 }
 
 const styles = StyleSheet.create({
-    logo: {
-        width: 170,
-        height: 46,
-        alignSelf: 'center',
-        marginBottom: 12,
-    },
-    backButton: {
-        alignSelf: 'center',
-        backgroundColor: colors.black,
-        borderRadius: 24,
-        paddingHorizontal: 18,
-        paddingVertical: 8,
-        marginBottom: 20,
-    },
-    backButtonText: {
-        fontFamily: fonts.semiBold,
-        fontSize: 14,
-        color: colors.white,
-    },
     title: {
         fontFamily: fonts.bold,
         fontSize: 22,
         color: colors.textPrimary,
-        textAlign: 'center',
         marginBottom: 8,
+        textAlign: 'center',
     },
     subtitle: {
         fontFamily: fonts.regular,
         fontSize: 14,
         color: colors.marine,
+        marginBottom: 20,
         textAlign: 'center',
-        marginBottom: 24,
+        lineHeight: 20,
     },
     otpRow: {
         flexDirection: 'row',
@@ -198,31 +177,7 @@ const styles = StyleSheet.create({
     otpBoxFilled: {
         borderColor: colors.primary,
     },
-    error: {
-        fontFamily: fonts.regular,
-        fontSize: 14,
-        color: '#D32F2F',
-        marginBottom: 16,
-        textAlign: 'center',
-    },
-    success: {
-        fontFamily: fonts.regular,
-        fontSize: 14,
-        color: '#2E7D32',
-        marginBottom: 16,
-        textAlign: 'center',
-    },
-    resendLink: {
-        marginTop: 16,
-        alignItems: 'center',
-    },
-    resendText: {
-        fontFamily: fonts.semiBold,
-        fontSize: 14,
-        color: colors.accent,
-    },
-    resendTextDisabled: {
-        color: colors.marine,
-        opacity: 0.5,
-    },
+    resendLink: { alignItems: 'center', marginTop: 16 },
+    resendText: { fontFamily: fonts.semiBold, fontSize: 14, color: colors.accent },
+    resendTextDisabled: { color: colors.marine, opacity: 0.5 },
 });

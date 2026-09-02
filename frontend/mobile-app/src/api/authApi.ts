@@ -78,3 +78,19 @@ export async function changePassword(payload: ChangePasswordPayload): Promise<st
     const response = await apiClient.patch('/api/auth/change-password', payload);
     return response.data.message;
 }
+
+export async function forgotPassword(email: string): Promise<string> {
+    const response = await apiClient.post('/api/auth/forgot-password', { email });
+    return response.data.message;
+}
+
+export interface ResetPasswordPayload {
+    email: string;
+    code: string;
+    newPassword: string;
+}
+
+export async function resetPassword(payload: ResetPasswordPayload): Promise<string> {
+    const response = await apiClient.post('/api/auth/reset-password', payload);
+    return response.data.message;
+}

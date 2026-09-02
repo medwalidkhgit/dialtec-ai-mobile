@@ -11,6 +11,37 @@ import { CommercantStackParamList } from '../../navigation/types';
 
 type NavigationProp = NativeStackNavigationProp<CommercantStackParamList, 'CatalogueList'>;
 
+/** Les 3 niveaux d'état du stock, déterminant à la fois le texte et la
+ * couleur du badge affiché sur chaque produit. */
+type NiveauStock = 'disponible' | 'faible' | 'tresFaible';
+
+function calculerNiveauStock(quantite: number, seuilAlerte: number): NiveauStock {
+    if (quantite > seuilAlerte) return 'disponible';
+    if (quantite === seuilAlerte) return 'faible';
+    return 'tresFaible';
+}
+
+const LIBELLE_STOCK: Record<NiveauStock, string> = {
+    disponible: 'Disponible',
+    faible: 'Quantité faible',
+    tresFaible: 'Quantité très faible',
+};
+
+// Couleurs associées à chaque niveau — définies séparément du StyleSheet
+// principal, puisqu'elles dépendent d'une valeur dynamique (le niveau de
+// stock de CHAQUE produit), contrairement au reste des styles, fixes.
+const COULEUR_FOND_PAR_NIVEAU: Record<NiveauStock, string> = {
+    disponible: colors.success,
+    faible: colors.accent,
+    tresFaible: colors.danger,
+};
+
+const COULEUR_TEXTE_PAR_NIVEAU: Record<NiveauStock, string> = {
+    disponible: colors.white,
+    faible: colors.accentText,
+    tresFaible: colors.white,
+};
+
 export function CatalogueScreen() {
     const navigation = useNavigation<NavigationProp>();
     const [produits, setProduits] = useState<ProduitResponse[]>([]);
@@ -61,11 +92,12 @@ export function CatalogueScreen() {
                     }
                     renderItem={({ item }) => {
                         const imagePrincipale = (item.images ?? []).find((img) => img.estPrincipale) ?? item.images?.[0];
-                        const stockFaible = item.quantite <= item.seuilAlerte;
+                        const niveauStock = calculerNiveauStock(item.quantite, item.seuilAlerte);
 
                         return (
                             <TouchableOpacity
                                 style={styles.card}
+                                activeOpacity={0.75}
                                 onPress={() => navigation.navigate('ProduitDetail', { produitId: item.id })}
                             >
                                 {imagePrincipale ? (
@@ -84,11 +116,12 @@ export function CatalogueScreen() {
                                                 <Text style={styles.badgeTextOnAccent}>À valider</Text>
                                             </View>
                                         )}
-                                        {stockFaible && (
-                                            <View style={[styles.badge, styles.badgeDanger]}>
-                                                <Text style={styles.badgeTextOnDanger}>Stock faible</Text>
-                                            </View>
-                                        )}
+
+                                        <View style={[styles.badge, { backgroundColor: COULEUR_FOND_PAR_NIVEAU[niveauStock] }]}>
+                                            <Text style={[styles.badgeTexteBase, { color: COULEUR_TEXTE_PAR_NIVEAU[niveauStock] }]}>
+                                                {LIBELLE_STOCK[niveauStock]}
+                                            </Text>
+                                        </View>
                                     </View>
                                 </View>
                             </TouchableOpacity>
@@ -115,39 +148,40 @@ const styles = StyleSheet.create({
     card: {
         flexDirection: 'row',
         backgroundColor: colors.darkSurface,
-        borderRadius: 12,
-        marginBottom: 12,
+        borderRadius: 14,
+        marginBottom: 14,
         borderWidth: 1,
         borderColor: colors.darkBorder,
         overflow: 'hidden',
     },
     image: {
-        width: 88,
-        height: 88,
+        width: 100,
+        height: 100,
     },
     imagePlaceholder: {
         backgroundColor: colors.darkBorder,
     },
     cardContent: {
         flex: 1,
-        padding: 12,
+        padding: 14,
         justifyContent: 'center',
     },
     nom: {
-        fontFamily: fonts.semiBold,
-        fontSize: 15,
+        fontFamily: fonts.bold,
+        fontSize: 16,
         color: colors.darkTextPrimary,
-        marginBottom: 4,
+        marginBottom: 5,
     },
     prix: {
-        fontFamily: fonts.regular,
+        fontFamily: fonts.semiBold,
         fontSize: 14,
         color: colors.accent,
-        marginBottom: 6,
+        marginBottom: 8,
     },
     badgesRow: {
         flexDirection: 'row',
         gap: 6,
+        flexWrap: 'wrap',
     },
     badge: {
         paddingHorizontal: 8,
@@ -157,17 +191,15 @@ const styles = StyleSheet.create({
     badgeWarning: {
         backgroundColor: colors.accent,
     },
-    badgeDanger: {
-        backgroundColor: '#D32F2F',
-    },
     badgeTextOnAccent: {
         fontFamily: fonts.semiBold,
         fontSize: 11,
         color: colors.accentText,
     },
-    badgeTextOnDanger: {
+    // Style de base pour les badges de niveau de stock — la couleur exacte
+    // est appliquée dynamiquement, voir COULEUR_TEXTE_PAR_NIVEAU ci-dessus.
+    badgeTexteBase: {
         fontFamily: fonts.semiBold,
         fontSize: 11,
-        color: colors.white,
     },
 });

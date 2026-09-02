@@ -70,16 +70,27 @@ export function DecouvrirCommercantsScreen() {
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={styles.list}
                     ListEmptyComponent={<Text style={styles.emptyText}>Aucun commerçant trouvé.</Text>}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={styles.card}
-                            onPress={() => navigation.navigate('CommercantCatalogue', { commercant: item })}
-                        >
-                            <Text style={styles.cardName}>{item.fullName}</Text>
-                            <Text style={styles.cardDetail}>{SHOP_CATEGORY_LABELS[item.shopCategory]}</Text>
-                            <Text style={styles.cardDetail}>{item.city}</Text>
-                        </TouchableOpacity>
-                    )}
+                    renderItem={({ item }) => {
+                        const initiale = item.fullName?.charAt(0)?.toUpperCase() ?? '?';
+                        return (
+                            <TouchableOpacity
+                                style={styles.card}
+                                activeOpacity={0.75}
+                                onPress={() => navigation.navigate('CommercantCatalogue', { commercant: item })}
+                            >
+                                <View style={styles.avatar}>
+                                    <Text style={styles.avatarText}>{initiale}</Text>
+                                </View>
+                                <View style={styles.cardInfo}>
+                                    <Text style={styles.cardName}>{item.fullName}</Text>
+                                    <View style={styles.categorieBadge}>
+                                        <Text style={styles.categorieBadgeText}>{SHOP_CATEGORY_LABELS[item.shopCategory]}</Text>
+                                    </View>
+                                    <Text style={styles.cardVille}>📍 {item.city}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    }}
                 />
             )}
         </View>
@@ -116,13 +127,35 @@ const styles = StyleSheet.create({
         marginTop: 40,
     },
     card: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
         backgroundColor: colors.darkSurface,
-        borderRadius: 12,
+        borderRadius: 14,
         padding: 16,
         marginBottom: 12,
         borderWidth: 1,
         borderColor: colors.darkBorder,
     },
-    cardName: { fontFamily: fonts.semiBold, fontSize: 16, color: colors.darkTextPrimary, marginBottom: 4 },
-    cardDetail: { fontFamily: fonts.regular, fontSize: 13, color: colors.darkTextSecondary },
+    avatar: {
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: colors.accent,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    avatarText: { fontFamily: fonts.bold, fontSize: 20, color: colors.accentText },
+    cardInfo: { flex: 1 },
+    cardName: { fontFamily: fonts.bold, fontSize: 16, color: colors.darkTextPrimary, marginBottom: 6 },
+    categorieBadge: {
+        alignSelf: 'flex-start',
+        backgroundColor: colors.bleuNuit,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
+        marginBottom: 6,
+    },
+    categorieBadgeText: { fontFamily: fonts.semiBold, fontSize: 11, color: colors.white },
+    cardVille: { fontFamily: fonts.regular, fontSize: 13, color: colors.darkTextSecondary },
 });

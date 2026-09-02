@@ -2,12 +2,14 @@ package com.dialtec.authentication_service.controller;
 
 import com.dialtec.authentication_service.dto.request.ChangeEmailRequest;
 import com.dialtec.authentication_service.dto.request.ChangePasswordRequest;
+import com.dialtec.authentication_service.dto.request.ForgotPasswordRequest;
 import com.dialtec.authentication_service.dto.request.LoginRequest;
 import com.dialtec.authentication_service.dto.request.OtpVerificationRequest;
 import com.dialtec.authentication_service.dto.request.RefreshTokenRequest;
 import com.dialtec.authentication_service.dto.request.RegisterClientRequest;
 import com.dialtec.authentication_service.dto.request.RegisterCommercantRequest;
 import com.dialtec.authentication_service.dto.request.ResendOtpRequest;
+import com.dialtec.authentication_service.dto.request.ResetPasswordRequest;
 import com.dialtec.authentication_service.dto.response.ApiResponse;
 import com.dialtec.authentication_service.dto.response.AuthResponse;
 import com.dialtec.authentication_service.service.AuthService;
@@ -71,5 +73,15 @@ public class AuthController {
     @PatchMapping("/change-password")
     public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         return ResponseEntity.ok(authService.changePassword(request));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.forgotPassword(request));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(request));
     }
 }

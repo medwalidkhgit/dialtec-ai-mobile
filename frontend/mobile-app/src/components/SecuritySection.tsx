@@ -6,6 +6,7 @@ import { changeEmail, changePassword } from '../api/authApi';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
+import { AlertBanner } from './AlertBanner';
 
 interface SecuritySectionProps {
     currentEmail: string;
@@ -74,8 +75,8 @@ export function SecuritySection({ currentEmail, dark }: SecuritySectionProps) {
     }
 
     return (
-        <View style={styles.section}>
-            <Text style={[styles.sectionTitle, dark && styles.sectionTitleDark]}>Sécurité</Text>
+        <View style={[styles.carte, dark && styles.carteDark]}>
+            <Text style={[styles.carteTitre, dark && styles.carteTitreDark]}>Sécurité</Text>
 
             {isChangingEmail ? (
                 <View style={styles.subBlock}>
@@ -94,7 +95,7 @@ export function SecuritySection({ currentEmail, dark }: SecuritySectionProps) {
                         onChangeText={setEmailPassword}
                         secureTextEntry
                     />
-                    {emailError ? <Text style={styles.error}>{emailError}</Text> : null}
+                    <AlertBanner message={emailError} variant="error" dark={dark} />
                     <Text style={[styles.warningText, dark && styles.warningTextDark]}>
                         Après confirmation, tu devras vérifier la nouvelle adresse par code — tu seras déconnecté
                         automatiquement.
@@ -141,7 +142,7 @@ export function SecuritySection({ currentEmail, dark }: SecuritySectionProps) {
                         onChangeText={setConfirmNewPassword}
                         secureTextEntry
                     />
-                    {passwordError ? <Text style={styles.error}>{passwordError}</Text> : null}
+                    <AlertBanner message={passwordError} variant="error" dark={dark} />
                     <Button
                         title="Confirmer le changement de mot de passe"
                         onPress={handleChangePassword}
@@ -157,7 +158,7 @@ export function SecuritySection({ currentEmail, dark }: SecuritySectionProps) {
                 </View>
             ) : (
                 <>
-                    {passwordSuccess ? <Text style={styles.success}>{passwordSuccess}</Text> : null}
+                    <AlertBanner message={passwordSuccess} variant="success" dark={dark} />
                     <Button
                         title="Changer de mot de passe"
                         variant="outline"
@@ -172,14 +173,27 @@ export function SecuritySection({ currentEmail, dark }: SecuritySectionProps) {
 }
 
 const styles = StyleSheet.create({
-    section: { marginTop: 32 },
-    sectionTitle: {
-        fontFamily: fonts.bold,
-        fontSize: 17,
-        color: colors.textPrimary,
-        marginBottom: 14,
+    // Même traitement visuel que la carte "Informations boutique", pour une
+    // vraie cohérence sur toute la page profil — plus un simple bloc à plat.
+    carte: {
+        marginTop: 8,
+        backgroundColor: colors.white,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.marine + '20',
+        padding: 18,
     },
-    sectionTitleDark: {
+    carteDark: {
+        backgroundColor: colors.darkSurface,
+        borderColor: colors.darkBorder,
+    },
+    carteTitre: {
+        fontFamily: fonts.bold,
+        fontSize: 16,
+        color: colors.textPrimary,
+        marginBottom: 16,
+    },
+    carteTitreDark: {
         color: colors.darkTextPrimary,
     },
     subBlock: { marginBottom: 20 },
@@ -193,17 +207,5 @@ const styles = StyleSheet.create({
     },
     warningTextDark: {
         color: colors.darkTextSecondary,
-    },
-    error: {
-        fontFamily: fonts.regular,
-        fontSize: 13,
-        color: '#D32F2F',
-        marginBottom: 10,
-    },
-    success: {
-        fontFamily: fonts.regular,
-        fontSize: 13,
-        color: '#2E7D32',
-        marginBottom: 10,
     },
 });

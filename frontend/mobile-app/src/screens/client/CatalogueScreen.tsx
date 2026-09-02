@@ -19,6 +19,12 @@ export function CatalogueScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
+    // Note pour plus tard : un filtre par TYPE DE BOUTIQUE (pas par
+    // catégorie de produit, qui est un texte libre généré par l'IA et donc
+    // incompatible avec une liste fixe) serait une vraie amélioration
+    // future — mais nécessite un appel entre product-service et
+    // user-service (la catégorie de boutique n'est connue que de
+    // user-service), un vrai chantier backend, pas fait ce soir.
     const charger = useCallback(async (nom?: string) => {
         try {
             const result = await listerCataloguePublic(nom || undefined);
@@ -57,7 +63,7 @@ export function CatalogueScreen() {
                     dark
                     value={recherche}
                     onChangeText={setRecherche}
-                    placeholder="Nom du produit..."
+                    placeholder="Recherche par nom du produit..."
                     onSubmitEditing={handleRechercheSubmit}
                     returnKeyType="search"
                 />
@@ -79,6 +85,7 @@ export function CatalogueScreen() {
                         return (
                             <TouchableOpacity
                                 style={styles.card}
+                                activeOpacity={0.75}
                                 onPress={() => navigation.navigate('ProduitDetailPublic', { produitId: item.id })}
                             >
                                 {image ? (
@@ -102,7 +109,7 @@ export function CatalogueScreen() {
 
 const styles = StyleSheet.create({
     wrapper: { flex: 1, backgroundColor: colors.darkBackground },
-    searchContainer: { paddingHorizontal: 16, paddingTop: 8 },
+    searchContainer: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
     loader: { marginTop: 60 },
     list: { padding: 16 },
     emptyText: {
@@ -115,16 +122,16 @@ const styles = StyleSheet.create({
     card: {
         flexDirection: 'row',
         backgroundColor: colors.darkSurface,
-        borderRadius: 12,
+        borderRadius: 14,
         marginBottom: 12,
         borderWidth: 1,
         borderColor: colors.darkBorder,
         overflow: 'hidden',
     },
-    image: { width: 88, height: 88 },
+    image: { width: 100, height: 100 },
     imagePlaceholder: { backgroundColor: colors.darkBorder },
     cardContent: { flex: 1, padding: 12, justifyContent: 'center' },
-    nom: { fontFamily: fonts.semiBold, fontSize: 15, color: colors.darkTextPrimary, marginBottom: 4 },
-    prix: { fontFamily: fonts.regular, fontSize: 14, color: colors.accent, marginBottom: 2 },
+    nom: { fontFamily: fonts.bold, fontSize: 16, color: colors.darkTextPrimary, marginBottom: 4 },
+    prix: { fontFamily: fonts.semiBold, fontSize: 14, color: colors.accent, marginBottom: 4 },
     categorie: { fontFamily: fonts.regular, fontSize: 12, color: colors.darkTextSecondary },
 });

@@ -1,10 +1,3 @@
-/**
- * Palette OpenShelf.
- *
- * Règle importante sur l'orange : jamais en texte sur fond blanc/clair
- * (contraste insuffisant). Utilisation correcte : fond de bouton, avec
- * du texte NOIR à l'intérieur — jamais de texte orange.
- */
 export const colors = {
     // Palette brute
     white: '#FFFFFF',
@@ -30,4 +23,14 @@ export const colors = {
     darkTextPrimary: '#FFFFFF',
     darkTextSecondary: '#A0A0A0',
     darkBorder: '#2C2C2E',
+
+    // États sémantiques — succès/erreur, centralisés ici plutôt qu'écrits en
+    // dur dans chaque écran. "Soft" = fond pâle pour un bandeau d'alerte,
+    // le texte/icône utilise la version pleine juste au-dessus.
+    danger: '#D32F2F',
+    dangerSoft: '#FDEDEC',       // fond pâle, pensé pour l'écran clair (auth)
+    dangerSoftDark: '#3A1F1F',   // fond sombre équivalent, pour les espaces connectés
+    success: '#2E7D32',
+    successSoft: '#EAF6EB',
+    successSoftDark: '#1B3A1E',
 };

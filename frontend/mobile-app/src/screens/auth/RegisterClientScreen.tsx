@@ -17,6 +17,7 @@ import { TextInput } from '../../components/TextInput';
 import { registerClient } from '../../api/authApi';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
+import { AlertBanner } from '../../components/AlertBanner';
 import { AuthStackParamList } from '../../navigation/types';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'RegisterClient'>;
@@ -112,7 +113,7 @@ export function RegisterClientScreen() {
                             keyboardType="phone-pad"
                         />
 
-                        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+                        <AlertBanner message={errorMessage} variant="error" />
 
                         <Button title="S'inscrire" onPress={handleRegister} loading={isLoading} />
                     </ScrollView>

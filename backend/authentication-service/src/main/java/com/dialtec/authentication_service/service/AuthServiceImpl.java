@@ -3,12 +3,14 @@ package com.dialtec.authentication_service.service;
 import com.dialtec.authentication_service.FeignClient.UserServiceFeignClient;
 import com.dialtec.authentication_service.dto.request.ChangeEmailRequest;
 import com.dialtec.authentication_service.dto.request.ChangePasswordRequest;
+import com.dialtec.authentication_service.dto.request.ForgotPasswordRequest;
 import com.dialtec.authentication_service.dto.request.LoginRequest;
 import com.dialtec.authentication_service.dto.request.OtpVerificationRequest;
 import com.dialtec.authentication_service.dto.request.RefreshTokenRequest;
 import com.dialtec.authentication_service.dto.request.RegisterClientRequest;
 import com.dialtec.authentication_service.dto.request.RegisterCommercantRequest;
 import com.dialtec.authentication_service.dto.request.ResendOtpRequest;
+import com.dialtec.authentication_service.dto.request.ResetPasswordRequest;
 import com.dialtec.authentication_service.dto.response.ApiResponse;
 import com.dialtec.authentication_service.dto.response.AuthResponse;
 import com.dialtec.authentication_service.dto.user.ClientProfileCreationRequest;
@@ -263,6 +265,37 @@ public class AuthServiceImpl implements AuthService {
         authUserRepository.save(authUser);
 
         return ApiResponse.success("Mot de passe modifié avec succès.");
+    }
+
+    @Override
+    @Transactional
+    public ApiResponse<Void> forgotPassword(ForgotPasswordRequest request) {
+        AuthUser authUser = authUserRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("Aucun compte trouvé avec cet email."));
+
+        // Réutilise exactement le même mécanisme que la vérification de
+        // compte à l'inscription — même entité Otp, même envoi d'email,
+        // même limite de tentatives et de délai de renvoi.
+        otpService.generateAndSendOtp(authUser);
+
+        return ApiResponse.success("Un code de réinitialisation a été envoyé par email.");
+    }
+
+    @Override
+    @Transactional
+    public ApiResponse<Void> resetPassword(ResetPasswordRequest request) {
+        AuthUser authUser = authUserRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("Aucun compte trouvé avec cet email."));
+
+        // Vérifie le code exactement comme pour la vérification de compte
+        // — code inconnu, expiré, trop de tentatives, tout est déjà géré
+        // par cette méthode existante, aucune logique à dupliquer ici.
+        otpService.verifyOtp(authUser, request.getCode());
+
+        authUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        authUserRepository.save(authUser);
+
+        return ApiResponse.success("Mot de passe réinitialisé avec succès.");
     }
 
     @Override

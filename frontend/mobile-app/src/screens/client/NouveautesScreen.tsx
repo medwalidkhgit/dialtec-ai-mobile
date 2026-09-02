@@ -44,6 +44,8 @@ export function NouveautesScreen() {
         <View style={styles.wrapper}>
             <Header role="client" />
 
+            <Text style={styles.title}>Nouveautés de mes fournisseurs</Text>
+
             {isLoading ? (
                 <ActivityIndicator color={colors.accent} size="large" style={styles.loader} />
             ) : (
@@ -66,6 +68,7 @@ export function NouveautesScreen() {
                         return (
                             <TouchableOpacity
                                 style={styles.card}
+                                activeOpacity={0.75}
                                 onPress={() => navigation.navigate('ProduitDetailPublic', { produitId: item.id })}
                             >
                                 {image ? (
@@ -74,11 +77,11 @@ export function NouveautesScreen() {
                                     <View style={[styles.image, styles.imagePlaceholder]} />
                                 )}
                                 <View style={styles.cardContent}>
+                                    <View style={styles.newBadge}>
+                                        <Text style={styles.newBadgeText}>✨ Nouveau</Text>
+                                    </View>
                                     <Text style={styles.nom} numberOfLines={1}>{item.nom}</Text>
                                     <Text style={styles.prix}>{item.prix ? `${item.prix} MAD` : 'Prix non défini'}</Text>
-                                    <View style={styles.newBadge}>
-                                        <Text style={styles.newBadgeText}>Nouveau</Text>
-                                    </View>
                                 </View>
                             </TouchableOpacity>
                         );
@@ -91,6 +94,14 @@ export function NouveautesScreen() {
 
 const styles = StyleSheet.create({
     wrapper: { flex: 1, backgroundColor: colors.darkBackground },
+    title: {
+        fontFamily: fonts.bold,
+        fontSize: 20,
+        color: colors.darkTextPrimary,
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        marginBottom: 4,
+    },
     centered: { alignItems: 'center', justifyContent: 'center', paddingTop: 80, paddingHorizontal: 30 },
     emptyText: {
         fontFamily: fonts.regular,
@@ -104,23 +115,24 @@ const styles = StyleSheet.create({
     card: {
         flexDirection: 'row',
         backgroundColor: colors.darkSurface,
-        borderRadius: 12,
+        borderRadius: 14,
         marginBottom: 12,
         borderWidth: 1,
         borderColor: colors.darkBorder,
         overflow: 'hidden',
     },
-    image: { width: 88, height: 88 },
+    image: { width: 100, height: 100 },
     imagePlaceholder: { backgroundColor: colors.darkBorder },
     cardContent: { flex: 1, padding: 12, justifyContent: 'center' },
-    nom: { fontFamily: fonts.semiBold, fontSize: 15, color: colors.darkTextPrimary, marginBottom: 4 },
-    prix: { fontFamily: fonts.regular, fontSize: 14, color: colors.accent, marginBottom: 6 },
     newBadge: {
         alignSelf: 'flex-start',
         backgroundColor: colors.gold,
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 8,
+        marginBottom: 6,
     },
     newBadgeText: { fontFamily: fonts.semiBold, fontSize: 11, color: colors.black },
+    nom: { fontFamily: fonts.bold, fontSize: 16, color: colors.darkTextPrimary, marginBottom: 4 },
+    prix: { fontFamily: fonts.semiBold, fontSize: 14, color: colors.accent },
 });

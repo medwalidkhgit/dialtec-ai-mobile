@@ -10,6 +10,8 @@ import { useAuth } from '../../context/AuthContext';
 import { resendOtp } from '../../api/authApi';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
+import { AlertBanner } from '../../components/AlertBanner';
+import { AProposModal } from '../../components/AProposModal';
 import { AuthStackParamList } from '../../navigation/types';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
@@ -23,6 +25,7 @@ export function LoginScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [accountNotVerified, setAccountNotVerified] = useState(false);
+    const [aProposVisible, setAProposVisible] = useState(false);
 
     async function handleLogin() {
         setErrorMessage('');
@@ -75,6 +78,10 @@ export function LoginScreen() {
                     style={styles.logo}
                     resizeMode="contain"
                 />
+
+                <TouchableOpacity onPress={() => setAProposVisible(true)}>
+                    <Text style={styles.aProposText}>À propos d'OpenShelf</Text>
+                </TouchableOpacity>
             </View>
 
             <Card>
@@ -99,7 +106,11 @@ export function LoginScreen() {
                     secureTextEntry
                 />
 
-                {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotPasswordLink}>
+                    <Text style={styles.forgotPasswordText}>Mot de passe oublié ?</Text>
+                </TouchableOpacity>
+
+                <AlertBanner message={errorMessage} variant="error" />
 
                 {accountNotVerified && (
                     <TouchableOpacity onPress={handleVerifyNow} style={styles.verifyLinkContainer}>
@@ -116,6 +127,8 @@ export function LoginScreen() {
                     </Text>
                 </TouchableOpacity>
             </Card>
+
+            <AProposModal visible={aProposVisible} onClose={() => setAProposVisible(false)} />
         </AuthBackground>
     );
 }
@@ -129,6 +142,12 @@ const styles = StyleSheet.create({
         width: 170,
         height: 46,
         marginBottom: 6,
+    },
+    aProposText: {
+        fontFamily: fonts.regular,
+        fontSize: 13,
+        color: colors.marine,
+        textDecorationLine: 'underline',
     },
     title: {
         fontFamily: fonts.bold,
@@ -147,6 +166,15 @@ const styles = StyleSheet.create({
     verifyLinkContainer: {
         alignItems: 'center',
         marginBottom: 16,
+    },
+    forgotPasswordLink: {
+        alignItems: 'flex-end',
+        marginBottom: 16,
+    },
+    forgotPasswordText: {
+        fontFamily: fonts.regular,
+        fontSize: 13,
+        color: colors.marine,
     },
     verifyLinkText: {
         fontFamily: fonts.semiBold,

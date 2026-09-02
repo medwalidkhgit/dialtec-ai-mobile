@@ -102,9 +102,9 @@ const styles = StyleSheet.create({
         borderColor: colors.darkBorder,
         overflow: 'hidden',
     },
-    image: { width: 88, height: 88 },
+    image: { width: 100, height: 100 },
     imagePlaceholder: { backgroundColor: colors.darkBorder },
     cardContent: { flex: 1, padding: 12, justifyContent: 'center' },
-    nom: { fontFamily: fonts.semiBold, fontSize: 15, color: colors.darkTextPrimary, marginBottom: 4 },
-    prix: { fontFamily: fonts.regular, fontSize: 14, color: colors.accent },
+    nom: { fontFamily: fonts.bold, fontSize: 16, color: colors.darkTextPrimary, marginBottom: 4 },
+    prix: { fontFamily: fonts.semiBold, fontSize: 14, color: colors.accent },
 });

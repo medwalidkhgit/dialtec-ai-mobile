@@ -18,6 +18,7 @@ import { TextInput } from '../../components/TextInput';
 import { registerCommercant } from '../../api/authApi';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
+import { AlertBanner } from '../../components/AlertBanner';
 import { AuthStackParamList } from '../../navigation/types';
 import { SHOP_CATEGORIES, SHOP_CATEGORY_LABELS, ShopCategory } from '../../constants/shopCategories';
 
@@ -143,7 +144,7 @@ export function RegisterCommercantScreen() {
                             multiline
                         />
 
-                        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+                        <AlertBanner message={errorMessage} variant="error" />
 
                         <Button title="S'inscrire" onPress={handleRegister} loading={isLoading} />
                     </ScrollView>

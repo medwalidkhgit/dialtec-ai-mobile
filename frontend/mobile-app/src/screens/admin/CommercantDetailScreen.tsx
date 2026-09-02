@@ -11,6 +11,24 @@ import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { CommercantsStackParamList } from '../../navigation/types';
 
+const statusLabels: Record<string, string> = {
+    ACTIF: 'Actif',
+    BLOQUE: 'Bloqué',
+    EN_ATTENTE_VERIFICATION: 'En attente',
+};
+
+const statusColors: Record<string, string> = {
+    ACTIF: '#2E7D32',
+    BLOQUE: '#D32F2F',
+    EN_ATTENTE_VERIFICATION: colors.gold,
+};
+
+const statusTextColors: Record<string, string> = {
+    ACTIF: colors.white,
+    BLOQUE: colors.white,
+    EN_ATTENTE_VERIFICATION: colors.black,
+};
+
 type NavigationProp = NativeStackNavigationProp<CommercantsStackParamList, 'CommercantDetailAdmin'>;
 type RouteProps = RouteProp<CommercantsStackParamList, 'CommercantDetailAdmin'>;
 
@@ -47,8 +65,9 @@ export function CommercantDetailScreen() {
                 await bloquerCompte(commercantId);
             }
             charger();
-        } catch {
-            Alert.alert('Erreur', "Impossible d'effectuer cette action.");
+        } catch (error: any) {
+            const message = error?.response?.data?.message ?? "Impossible d'effectuer cette action.";
+            Alert.alert('Erreur', message);
         } finally {
             setIsActing(false);
         }
@@ -64,8 +83,9 @@ export function CommercantDetailScreen() {
                     try {
                         await supprimerCompteAdmin(commercantId);
                         navigation.goBack();
-                    } catch {
-                        Alert.alert('Erreur', 'Impossible de supprimer ce compte.');
+                    } catch (error: any) {
+                        const message = error?.response?.data?.message ?? 'Impossible de supprimer ce compte.';
+                        Alert.alert('Erreur', message);
                     }
                 },
             },
@@ -89,14 +109,23 @@ export function CommercantDetailScreen() {
                 <Text style={styles.backText}>← Retour</Text>
             </TouchableOpacity>
 
-            <Text style={styles.nom}>{commercant.fullName}</Text>
-            <Text style={styles.email}>{commercant.email}</Text>
+            <View style={styles.headerBlock}>
+                <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{commercant.fullName?.charAt(0)?.toUpperCase() ?? '?'}</Text>
+                </View>
+                <Text style={styles.nom}>{commercant.fullName}</Text>
+                <Text style={styles.email}>{commercant.email}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: statusColors[commercant.accountStatus] }]}>
+                    <Text style={[styles.statusText, { color: statusTextColors[commercant.accountStatus] }]}>
+                        {statusLabels[commercant.accountStatus]}
+                    </Text>
+                </View>
+            </View>
 
             <View style={styles.infoBlock}>
                 <InfoRow label="Catégorie" value={SHOP_CATEGORY_LABELS[commercant.shopCategory]} />
                 <InfoRow label="Téléphone" value={commercant.phoneNumber} />
-                <InfoRow label="Adresse" value={`${commercant.address}, ${commercant.city} ${commercant.postalCode}`} />
-                <InfoRow label="Statut" value={commercant.accountStatus} />
+                <InfoRow label="Adresse" value={`${commercant.address}, ${commercant.city} ${commercant.postalCode}`} dernier />
             </View>
 
             <Button
@@ -114,9 +143,9 @@ export function CommercantDetailScreen() {
     );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value, dernier }: { label: string; value: string; dernier?: boolean }) {
     return (
-        <View style={styles.row}>
+        <View style={[styles.row, dernier && styles.rowDernier]}>
             <Text style={styles.rowLabel}>{label}</Text>
             <Text style={styles.rowValue}>{value}</Text>
         </View>
@@ -129,12 +158,38 @@ const styles = StyleSheet.create({
     container: { padding: 20, paddingBottom: 60 },
     backLink: { marginBottom: 16 },
     backText: { fontFamily: fonts.regular, fontSize: 16, color: colors.accent },
-    nom: { fontFamily: fonts.bold, fontSize: 22, color: colors.darkTextPrimary, marginBottom: 4 },
-    email: { fontFamily: fonts.regular, fontSize: 14, color: colors.darkTextSecondary, marginBottom: 24 },
-    infoBlock: { marginBottom: 28 },
-    row: { marginBottom: 14 },
-    rowLabel: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.darkTextSecondary, marginBottom: 2 },
-    rowValue: { fontFamily: fonts.regular, fontSize: 16, color: colors.darkTextPrimary },
+    nom: { fontFamily: fonts.bold, fontSize: 20, color: colors.darkTextPrimary, marginBottom: 4 },
+    email: { fontFamily: fonts.regular, fontSize: 14, color: colors.darkTextSecondary, marginBottom: 10 },
+    headerBlock: { alignItems: 'center', marginBottom: 24 },
+    avatar: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: colors.accent,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 10,
+    },
+    avatarText: { fontFamily: fonts.bold, fontSize: 26, color: colors.accentText },
+    statusBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10 },
+    statusText: { fontFamily: fonts.semiBold, fontSize: 12 },
+    infoBlock: {
+        backgroundColor: colors.darkSurface,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.darkBorder,
+        padding: 18,
+        marginBottom: 28,
+    },
+    row: {
+        paddingBottom: 12,
+        marginBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.darkBorder,
+    },
+    rowDernier: { borderBottomWidth: 0, marginBottom: 0, paddingBottom: 0 },
+    rowLabel: { fontFamily: fonts.semiBold, fontSize: 12, color: colors.darkTextSecondary, marginBottom: 3 },
+    rowValue: { fontFamily: fonts.regular, fontSize: 15, color: colors.darkTextPrimary },
     deleteButton: { marginTop: 24, alignItems: 'center' },
     deleteText: { fontFamily: fonts.semiBold, fontSize: 14, color: '#D32F2F' },
 });

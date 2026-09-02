@@ -2,12 +2,14 @@ package com.dialtec.authentication_service.service;
 
 import com.dialtec.authentication_service.dto.request.ChangeEmailRequest;
 import com.dialtec.authentication_service.dto.request.ChangePasswordRequest;
+import com.dialtec.authentication_service.dto.request.ForgotPasswordRequest;
 import com.dialtec.authentication_service.dto.request.LoginRequest;
 import com.dialtec.authentication_service.dto.request.OtpVerificationRequest;
 import com.dialtec.authentication_service.dto.request.RefreshTokenRequest;
 import com.dialtec.authentication_service.dto.request.RegisterClientRequest;
 import com.dialtec.authentication_service.dto.request.RegisterCommercantRequest;
 import com.dialtec.authentication_service.dto.request.ResendOtpRequest;
+import com.dialtec.authentication_service.dto.request.ResetPasswordRequest;
 import com.dialtec.authentication_service.dto.response.ApiResponse;
 import com.dialtec.authentication_service.dto.response.AuthResponse;
 import com.dialtec.authentication_service.enums.AccountStatus;
@@ -33,6 +35,10 @@ public interface AuthService {
     ApiResponse<Void> changeEmail(ChangeEmailRequest request);
 
     ApiResponse<Void> changePassword(ChangePasswordRequest request);
+
+    ApiResponse<Void> forgotPassword(ForgotPasswordRequest request);
+
+    ApiResponse<Void> resetPassword(ResetPasswordRequest request);
 
     void deleteAuthUser(UUID userId);
 
