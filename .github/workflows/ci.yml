@@ -76,11 +76,28 @@ jobs:
 
       - name: Build + tests (${{ matrix.service }})
         run: sh mvnw -B clean verify
-        # La vraie commande : compile le service, PUIS exécute tous les
-        # tests unitaires qu'on vient d'écrire (les 128 tests répartis sur
-        # les 6 services). "-B" (batch mode) désactive les questions
-        # interactives de Maven, indispensable en CI où personne n'est là
-        # pour répondre. "clean verify" (plutôt que juste "test") garantit
-        # un dossier de build propre à chaque fois, et échoue immédiatement
-        # si un seul test casse — bloquant volontairement la suite du
-        # pipeline dans ce cas.
+
+      - name: Configuration des identifiants AWS
+        if: github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
+
+      - name: Connexion à Amazon ECR
+        if: github.ref == 'refs/heads/main'
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Construction et envoi de l'image Docker
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker build -t ${{ steps.ecr-login.outputs.registry }}/${{ matrix.service }}:latest .
+          docker push ${{ steps.ecr-login.outputs.registry }}/${{ matrix.service }}:latest
+
+      - name: Déploiement sur le cluster EKS
+        if: github.ref == 'refs/heads/main'
+        run: |
+          aws eks update-kubeconfig --name dialtec-cluster --region eu-west-3
+          kubectl rollout restart deployment/${{ matrix.service }}
